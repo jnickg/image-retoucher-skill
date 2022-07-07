@@ -1,0 +1,91 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "Voice Retouch Experiment",
+      "intents": [
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "EditImageIntent",
+          "samples": [
+            "edit",
+            "modify",
+            "retouch",
+            "touch up",
+            "edit {PhotoSlot}",
+            "modify {PhotoSlot}",
+            "retouch {PhotoSlot}",
+            "touch up {PhotoSlot}",
+            "edit a {PhotoSlot}",
+            "modify a {PhotoSlot}",
+            "retouch a {PhotoSlot}",
+            "touch up a {PhotoSlot}",
+            "let's edit a {PhotoSlot}",
+            "let's modify a {PhotoSlot}",
+            "let's retouch a {PhotoSlot}",
+            "let's touch up a {PhotoSlot}"
+          ],
+          "slots": [
+            {
+              "name": "PhotoSlot",
+              "type": "PHOTO_SYNONYM",
+              "samples": []
+            }
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "PHOTO_SYNONYM",
+          "values": [
+            {
+              "name": {
+                "value": "photo"
+              }
+            },
+            {
+              "name": {
+                "value": "photograph"
+              }
+            },
+            {
+              "name": {
+                "value": "pic"
+              }
+            },
+            {
+              "name": {
+                "value": "picture"
+              }
+            },
+            {
+              "name": {
+                "value": "image"
+              }
+            },
+            {
+              "name": {
+                "value": "snapshot"
+              }
+            },
+          ]
+        }
+      ]
+    }
+  },
+  "version": "1"
+}

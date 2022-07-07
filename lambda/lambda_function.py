@@ -37,15 +37,15 @@ class LaunchRequestHandler(AbstractRequestHandler):
         )
 
 
-class HelloWorldIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
+class EditImageIntentHandler(AbstractRequestHandler):
+    """Handler for Edit Image Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
+        return ask_utils.is_intent_name("EditImageIntent")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Hello World!"
+        speak_output = "Alright, let's load an image to edit."
 
         return (
             handler_input.response_builder
@@ -53,7 +53,6 @@ class HelloWorldIntentHandler(AbstractRequestHandler):
                 # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
-
 
 class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
