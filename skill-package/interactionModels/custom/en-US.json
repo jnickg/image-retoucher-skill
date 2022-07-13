@@ -37,12 +37,50 @@
             "let's edit a {PhotoSlot}",
             "let's modify a {PhotoSlot}",
             "let's retouch a {PhotoSlot}",
-            "let's touch up a {PhotoSlot}"
+            "let's touch up a {PhotoSlot}",
+            "edit {PhotoSlot} from {TimeSlot}",
+            "modify {PhotoSlot} from {TimeSlot}",
+            "retouch {PhotoSlot} from {TimeSlot}",
+            "touch up {PhotoSlot} from {TimeSlot}",
+            "edit a {PhotoSlot} from {TimeSlot}",
+            "modify a {PhotoSlot} from {TimeSlot}",
+            "retouch a {PhotoSlot} from {TimeSlot}",
+            "touch up a {PhotoSlot} from {TimeSlot}",
+            "let's edit a {PhotoSlot} from {TimeSlot}",
+            "let's modify a {PhotoSlot} from {TimeSlot}",
+            "let's retouch a {PhotoSlot} from {TimeSlot}",
+            "let's touch up a {PhotoSlot} from {TimeSlot}"
           ],
           "slots": [
             {
               "name": "PhotoSlot",
               "type": "PHOTO_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "TimeSlot",
+              "type": "AMAZON.DATE"
+            }
+          ]
+        },
+        {
+          "name": "EditSliderMetricIntent",
+          "samples": [
+            "adjust {MetricSlot}",
+            "change {MetricSlot}",
+            "edit {MetricSlot}",
+            "fiddle with {MetricSlot}",
+            "improve {MetricSlot}",
+            "look at {MetricSlot}",
+            "modify {MetricSlot}",
+            "tune {MetricSlot}",
+            "tweak {MetricSlot}",
+            "update {MetricSlot}"
+          ],
+          "slots": [
+            {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
               "samples": []
             }
           ]
@@ -81,7 +119,22 @@
               "name": {
                 "value": "snapshot"
               }
+            }
+          ]
+        },
+        {
+          "name": "SLIDER_METRIC_NAME",
+          "values": [
+            {
+              "name": {
+                "value": "contrast"
+              }
             },
+            {
+              "name": {
+                "value": "exposure"
+              }
+            }
           ]
         }
       ]
