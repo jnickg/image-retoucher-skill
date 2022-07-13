@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "Image Retoucher Experiment",
+      "invocationName": "image retoucher experiment",
       "intents": [
         {
           "name": "AMAZON.NavigateHomeIntent",
