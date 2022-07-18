@@ -5,6 +5,7 @@
 # session persistence, api calls, and more.
 # This sample is built using the handler classes approach in skill builder.
 import logging
+from click import prompt
 from dateutil.parser import isoparse as parse_date
 import ask_sdk_core.utils as ask_utils
 
@@ -12,11 +13,25 @@ from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
+from ask_sdk_model.ui.simple_card import SimpleCard
 
 from ask_sdk_model import Response
+from requests import session
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+ATTR_TIME_SLOT = "TimeSlot"
+ATTR_SESSION_IMAGE = "SessionImage"
+ATTR_REALLY_LOAD_NEW_IMAGE = "ReallyLoadNewImage"
+
+class SessionImageDescriptor:
+    loaded:bool = True
+    url:str = "https://voice-retouch-rest.herokuapp.com/todo/integrate/with/rest/api"
+
+
+def initialize_handler_attributes(handler_input:HandlerInput) -> None:
+    handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE] = False
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -28,12 +43,15 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Welcome, you can say Hello or Help. Which would you like to try?"
+        speak_output = "Welcome to Image Retoucher! You can load a photo to edit, or if your device is showing one now, you can start editing."
+        prompt_output = "What would you like to do?"
+
+        initialize_handler_attributes(handler_input)
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .ask(prompt_output)
                 .response
         )
 
@@ -48,13 +66,29 @@ class EditImageIntentHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         photo_synonym = slots["PhotoSlot"].value
-        time = parse_date(slots["TimeSlot"].value)
-        speak_output = f"Alright, let's load one {photo_synonym} to edit. Looking for photos taken around {time}..."
+        time_str = slots["TimeSlot"].value
+
+        session_image: SessionImageDescriptor = handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE]
+        really_load:bool = handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE]
+        if (session_image is None or really_load):
+            speak_output = f"Alright, let's load one {photo_synonym} to edit. Looking for photos taken {time_str}..."
+            prompt_output = "If you see the photo you want to edit, say \"Edit image X\" where X is the label you see. Otherwise, say \"Keep Browsing\". For now, hearing this response means an image is loaded."
+            time = parse_date(time_str)
+            card = SimpleCard(title="Photo Selection", content=f"TODO render card image to display photos taken\r\nat {time}, for user to select.")
+            handler_input.attributes_manager.persistent_attributes[ATTR_TIME_SLOT] = time
+            handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE] = SessionImageDescriptor()
+            handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE] = False
+        else:
+            speak_output = "It looks like you're already editing an image. If you really want to edit a new photo, just confirm by asking again."
+            prompt_output = speak_output
+            card = SimpleCard(title="Confirm", content="Really edit a new photo?")
+        
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
+                .set_card(card)
+                .ask(prompt_output)
                 .response
         )
 
@@ -69,12 +103,22 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         metric = slots["MetricSlot"].value
-        speak_output = f"Alright, let's edit this photo's {metric}."
+
+        session_image: SessionImageDescriptor = handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE]
+        if (session_image is not None and session_image.loaded):
+            speak_output = f"Alright, let's edit this photo's {metric}."
+            prompt_output = "Just say \"higher\" or \"lower\" and I'll adjust the slider a bit less each time. You can say \"done\" when you're satisfied, or \"cancel.\""
+            card = SimpleCard(title="Photo Editing", content="TODO render selected image in current state w/ histogram so user can see it")
+        else:
+            speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit a photo from today\" or another time"
+            prompt_output = speak_output
+            card = SimpleCard(title="Error", content="No loaded image in current session.")
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
+                .set_card(card)
+                .ask(prompt_output)
                 .response
         )
 
@@ -87,7 +131,7 @@ class HelpIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "You can say hello to me! How can I help?"
+        speak_output = "You can load a photo to edit, or if your device is showing one now, you can start editing."
 
         return (
             handler_input.response_builder
@@ -124,7 +168,7 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
 
-        # Any cleanup logic goes here.
+        # TODO end REST API session with a DELETE request on the image.
 
         return handler_input.response_builder.response
 
@@ -147,7 +191,6 @@ class IntentReflectorHandler(AbstractRequestHandler):
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
 
