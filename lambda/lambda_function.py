@@ -45,6 +45,9 @@ SLOT_METRIC = 'MetricSlot'
 SLOT_METRIC_VALUE = 'MetricValueSlot'
 SLOT_ALGO_NAME = 'AlgoNameSlot'
 
+ALGO_NAME_CLAHE = 'histogram equalization'
+ALGO_NAME_CLRXFR = 'color transfer'
+
 ATTR_SESSION_CONTEXT = 'SessionContext'
 
 @dataclass
@@ -165,7 +168,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         photo_synonym = slots["PhotoSlot"].value
-        image_id = slots[SLOT_ID].value if slots[SLOT_ID].value is not None else slots[SLOT_ID2].value
+        image_id = slots[SLOT_ID].value
 
         context = get_context(handler_input)
         if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0):
@@ -258,15 +261,34 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("ApplyAlgorithmIntent")(handler_input)
 
     def handle(self, handler_input):
+        slots = handler_input.request_envelope.request.intent.slots
+        algo_name = slots[SLOT_ALGO_NAME]
+        param = slots[SLOT_ID]
         context = get_context(handler_input)
 
-        # TODO DO
-        speak_output = "I don't know how to do this yet."
+        if algo_name == ALGO_NAME_CLRXFR and param is None:
+            # TODO show collage card and prompt for image ID instead of raising error
+            raise ValueError("Please specify which image ID you want to use with color transfer")
+        if (context.image_url is None):
+            raise ValueError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time")
+
+        param = param if param is not None else 0
+        context = update_operation(context, str(algo_name), int(param))
+        new_url = build_image_url(context)
+        speak_output = f"Alright, applying {algo_name} to the image."
+        prompt_output = speak_output
+        card = StandardCard(
+            title = f'Updated Photo {context.image_id}',
+            text = f'Applied {algo_name} to image',
+            image = Image(large_image_url=new_url)
+        )
 
         set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
+               .set_card(card)
+               .ask(prompt_output)
                .response
         )
 

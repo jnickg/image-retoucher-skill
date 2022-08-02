@@ -134,27 +134,72 @@
             "run an algorithm",
             "use an algorithm",
             "add {AlgoNameSlot}",
+            "add {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
+            "add {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
             "apply {AlgoNameSlot}",
+            "apply {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
+            "apply {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
             "run {AlgoNameSlot}",
+            "run {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
+            "run {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
             "use {AlgoNameSlot}",
-            "add algorithm to my image",
-            "apply algorithm to my image",
-            "run algorithm to my image",
-            "use algorithm to my image",
-            "add an algorithm to my image",
-            "apply an algorithm to my image",
-            "run an algorithm to my image",
+            "use {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
+            "use {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "add algorithm to {PhotoSlot}",
+            "apply algorithm to {PhotoSlot}",
+            "run algorithm to {PhotoSlot}",
+            "use algorithm to {PhotoSlot}",
+            "add an algorithm to {PhotoSlot}",
+            "apply an algorithm to {PhotoSlot}",
+            "run an algorithm to {PhotoSlot}",
+            "use an algorithm to image",
+            "add {AlgoNameSlot} to {PhotoSlot}",
+            "apply {AlgoNameSlot} to {PhotoSlot}",
+            "run {AlgoNameSlot} to {PhotoSlot}",
+            "use {AlgoNameSlot} to {PhotoSlot}",
+            "add algorithm to my {PhotoSlot}",
+            "apply algorithm to my {PhotoSlot}",
+            "run algorithm to my {PhotoSlot}",
+            "use algorithm to my {PhotoSlot}",
+            "add an algorithm to my {PhotoSlot}",
+            "apply an algorithm to my {PhotoSlot}",
+            "run an algorithm to my {PhotoSlot}",
             "use an algorithm to my image",
-            "add {AlgoNameSlot} to my image",
-            "apply {AlgoNameSlot} to my image",
-            "run {AlgoNameSlot} to my image",
-            "use {AlgoNameSlot} to my image"
+            "add {AlgoNameSlot} to my {PhotoSlot}",
+            "apply {AlgoNameSlot} to my {PhotoSlot}",
+            "run {AlgoNameSlot} to my {PhotoSlot}",
+            "use {AlgoNameSlot} to my {PhotoSlot}"
           ],
           "slots": [
             {
               "name": "AlgoNameSlot",
               "type": "ALGORITHM_NAME",
+              "samples": [],
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
+              }
+            },
+            {
+              "name": "PhotoSlot",
+              "type": "PHOTO_SYNONYM",
               "samples": []
+            },
+            {
+              "name": "IDSlot",
+              "type": "AMAZON.NUMBER",
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 0
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 9
+                }
+              ]
             }
           ]
         },
@@ -323,6 +368,31 @@
         {
           "type": "PlainText",
           "value": "The image ID needs to be between zero and nine"
+        }
+      ]
+    },
+    {
+      "id": "Elicit.Slot.AlgoNameSlot.Please",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "Which algorithm do you want to run? The options are \"Color Transfer\" and \"Histogram Equalization\""
+        },
+        {
+          "type": "PlainText",
+          "value": "Which algorithm do you want to run: \"Color Transfer\" or \"Histogram Equalization\"?"
+        },
+        {
+          "type": "PlainText",
+          "value": "Which algorithm do you want to run: \"C.L.A.H.E.\" or \"Histogram Equalization\"?"
+        },
+        {
+          "type": "PlainText",
+          "value": "Histogram equalization or Color Transfer?"
+        },
+        {
+          "type": "PlainText",
+          "value": "C.L.A.H.E. or Color Transfer?"
         }
       ]
     }
