@@ -115,14 +115,9 @@ class LaunchRequestHandler(AbstractRequestHandler):
             image = Image(large_image_url=API_COLLAGE_URL)
         )
         handler_input.response_builder.speak(speak_output)
+        handler_input.response_builder.set_card(card)
         handler_input.response_builder.ask(prompt_output)
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .ask(prompt_output)
-                .set_card(card)
-                .response
-        )
+        return handler_input.response_builder.response
 
 
 class EditImageIntentHandler(AbstractRequestHandler):
