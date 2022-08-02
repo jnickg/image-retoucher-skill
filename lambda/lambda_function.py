@@ -176,7 +176,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
         image_id = slots[SLOT_ID].value
 
         context = get_context(handler_input)
-        if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0):
+        if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0) or context.really_change:
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
         else:
             speak_output = "It looks like you're already editing an image.\r\nIf you really want to edit a new photo, just confirm by asking again."
