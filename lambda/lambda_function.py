@@ -117,6 +117,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                     title = f'Now Editing Photo {context.image_id}',
                     text = 'Proceed to edit image parameters or apply algorithms',
                     image = Image(large_image_url=context.image_url)
+                )
             else:
                 raise ValueError('Invalid image ID!')
         return speak_output, prompt_output, card
