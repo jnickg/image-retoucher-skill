@@ -31,7 +31,8 @@ logger.setLevel(logging.INFO)
 
 http = urllib3.PoolManager()
 
-API_ROOT_URL = Path('https://image-retoucher-rest.herokuapp.com/api/')
+API_PROTOCOL = 'https://'
+API_ROOT_URL = Path('image-retoucher-rest.herokuapp.com/api/')
 API_IMAGE_SLUG = Path('image')
 API_COLLAGE_URL = API_ROOT_URL / API_IMAGE_SLUG / 'static/collage'
 API_COMPARISON_SLUG = Path('comparison')
@@ -112,7 +113,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 image = Image(large_image_url=API_COLLAGE_URL)
             )
         else:
-            new_url = API_ROOT_URL / API_IMAGE_SLUG / str(image_id)
+            new_url = API_PROTOCOL + str(API_ROOT_URL / API_IMAGE_SLUG / str(image_id))
             if is_url_valid(str(new_url)):
                 context.image_id = int(image_id)
                 context.image_url = new_url
