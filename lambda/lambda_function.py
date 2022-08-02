@@ -6,6 +6,7 @@
 # This sample is built using the handler classes approach in skill builder.
 import logging
 from multiprocessing.sharedctypes import Value
+from urllib import response
 from click import prompt
 from dataclasses import dataclass, field, asdict
 from typing import List
@@ -176,16 +177,32 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
 
 
 class SetSliderMetricIntentHandler(AbstractRequestHandler):
-    pass
+    def can_handle(self, handler_input) -> bool:
+        return ask_utils.is_intent_name("SetSliderMetricIntent")(handler_input)
+
+    def handle(self, handler_input):
+        return handler_input.response_builder.speak("I don't know how to do this yet.").response
 
 class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
-    pass
+    def can_handle(self, handler_input) -> bool:
+        return ask_utils.is_intent_name("ApplyAlgorithmIntent")(handler_input)
+
+    def handle(self, handler_input):
+        return handler_input.response_builder.speak("I don't know how to do this yet.").response
 
 class UndoChangesIntentHandler(AbstractRequestHandler):
-    pass
+    def can_handle(self, handler_input) -> bool:
+        return ask_utils.is_intent_name("UndoChangesIntent")(handler_input)
+
+    def handle(self, handler_input):
+        return handler_input.response_builder.speak("I don't know how to do this yet.").response
 
 class SaveImageIntentHandler(AbstractRequestHandler):
-    pass
+    def can_handle(self, handler_input) -> bool:
+        return ask_utils.is_intent_name("SaveImageIntent")(handler_input)
+
+    def handle(self, handler_input):
+        return handler_input.response_builder.speak("I don't know how to do this yet.").response
 
 
 class HelpIntentHandler(AbstractRequestHandler):
