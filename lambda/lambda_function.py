@@ -48,6 +48,11 @@ SLOT_ALGO_NAME = 'AlgoNameSlot'
 ALGO_NAME_CLAHE = 'histogram equalization'
 ALGO_NAME_CLRXFR = 'color transfer'
 
+ALGO_OPNAMES_MAP = {
+    ALGO_NAME_CLAHE: 'clahe',
+    ALGO_NAME_CLRXFR: 'colorxfer'
+}
+
 ATTR_SESSION_CONTEXT = 'SessionContext'
 
 @dataclass
@@ -273,7 +278,8 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
             raise ValueError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time")
 
         param = param if param is not None else 0
-        context = update_operation(context, str(algo_name), int(param))
+        algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
+        context = update_operation(context, str(algo_op), int(param))
         new_url = build_image_url(context)
         speak_output = f"Alright, applying {algo_name} to the image."
         prompt_output = speak_output
