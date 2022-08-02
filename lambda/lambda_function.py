@@ -7,11 +7,10 @@
 import logging
 from multiprocessing.sharedctypes import Value
 from click import prompt
-from dateutil.parser import isoparse as parse_date
-from dataclasses import dataclass, field
-from collections import deque
-from typing import Deque
+from dataclasses import dataclass, field, asdict
+from typing import List
 from pathlib import Path
+import json
 import requests
 import ask_sdk_core.utils as ask_utils
 
@@ -54,27 +53,24 @@ class SessionContext:
     image_id : int = None
     image_url : str = None
     really_change : bool = False
-    operations : Deque[OperationDescriptor] = field(default_factory=deque)
+    operations : List[OperationDescriptor] = field(default_factory=list)
 
 ATTR_TIME_SLOT = "TimeSlot"
 ATTR_SESSION_IMAGE = "SessionImage"
 
-class SessionImageDescriptor:
-    loaded:bool = True
-    url:str = "http://image-retoucher-rest.herokuapp.com/image/0"
-
-
-def initialize_handler_attributes(handler_input:HandlerInput) -> None:
-    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = SessionContext()
-
 def get_context(handler_input:HandlerInput) -> SessionContext:
-    return handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
+    return SessionContext(**json.loads(handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]))
 
 def set_context(handler_input:HandlerInput, context:SessionContext):
-    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = context
+    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = json.dumps(asdict(context))
+
+def initialize_handler_attributes(handler_input:HandlerInput) -> None:
+    set_context(handler_input, SessionContext())
+
 
 def is_url_valid(url):
 	return requests.head(url).status_code < 400
+
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -85,7 +81,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Welcome to Image Retoucher! You can load a photo to edit, or if your device is showing one now, you can start editing."
+        speak_output = "Welcome to Image Retoucher! You can select a photo to edit, or if your device is showing one now, you can start editing."
         prompt_output = "What would you like to do?"
 
         initialize_handler_attributes(handler_input)
