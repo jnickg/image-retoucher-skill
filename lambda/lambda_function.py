@@ -76,6 +76,22 @@ def is_url_valid(url):
     logger.info(f'Testing validity of URL {url}')
     return http.request("GET", url).status < 400
 
+def build_image_url(cxt: SessionContext, comparison:bool = False) -> str:
+    full_url : str = cxt.image_url
+    for op in cxt.operations:
+        full_url += f'/{op.op}/{op.val}'
+    if comparison:
+        full_url += f'/{API_COMPARISON_SLUG}'
+    logger.info(f'Built full URL: {full_url}')
+    return full_url
+
+def update_operation(cxt: SessionContext, opname: str, opval: int):
+    updated = False
+    for op in cxt.operations:
+        if op.op == opname:
+            op.val = opval
+            updated = True
+    if not updated: cxt.operations.append(OperationDescriptor(op=opname, val=opval))
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -92,9 +108,21 @@ class LaunchRequestHandler(AbstractRequestHandler):
         logger.info('Initializing handler attributes')
         initialize_handler_attributes(handler_input)
         logger.info('Sending response...')
+
+        card = StandardCard(
+            title = 'Image Retoucher',
+            text = 'Select an image from the card to edit, using the number next to it.',
+            image = Image(large_image_url=API_COLLAGE_URL)
+        )
         handler_input.response_builder.speak(speak_output)
         handler_input.response_builder.ask(prompt_output)
-        return handler_input.response_builder.response
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .ask(prompt_output)
+                .set_card(card)
+                .response
+        )
 
 
 class EditImageIntentHandler(AbstractRequestHandler):
@@ -161,7 +189,7 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
-        metric = slots["MetricSlot"].value
+        metric = slots[SLOT_METRIC].value
 
         context = get_context(handler_input)
         if (context.image_url is not None):
@@ -187,7 +215,34 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("SetSliderMetricIntent")(handler_input)
 
     def handle(self, handler_input):
-        return handler_input.response_builder.speak("I don't know how to do this yet.").response
+        # type: (HandlerInput) -> Response
+        slots = handler_input.request_envelope.request.intent.slots
+        metric = slots[SLOT_METRIC].value
+        value = slots[SLOT_METRIC_VALUE].value
+        logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
+
+        context = get_context(handler_input)
+        if (context.image_url is not None):
+            speak_output = f"Alright, setting {metric} to {value}."
+            update_operation(context, str(metric), int(value))
+            new_url = build_image_url(context)
+            card = StandardCard(
+                title = f'Updated Photo {context.image_id}',
+                text = f'{metric} is now {value}',
+                image = Image(large_image_url=new_url)
+            )
+        else:
+            speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time"
+            prompt_output = speak_output
+            card = SimpleCard(title="Error", content="No loaded image in current session.")
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .set_card(card)
+                .ask(prompt_output)
+                .response
+        )
 
 class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input) -> bool:
