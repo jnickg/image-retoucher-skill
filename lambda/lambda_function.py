@@ -72,7 +72,8 @@ def initialize_handler_attributes(handler_input:HandlerInput) -> None:
 
 
 def is_url_valid(url):
-	return http.request("GET", url).status < 400
+    logger.info(f'Testing validity of URL {url}')
+    return http.request("GET", url).status < 400
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
