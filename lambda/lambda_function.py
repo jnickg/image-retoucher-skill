@@ -5,8 +5,14 @@
 # session persistence, api calls, and more.
 # This sample is built using the handler classes approach in skill builder.
 import logging
+from multiprocessing.sharedctypes import Value
 from click import prompt
 from dateutil.parser import isoparse as parse_date
+from dataclasses import dataclass, field
+from collections import deque
+from typing import Deque
+from pathlib import Path
+import requests
 import ask_sdk_core.utils as ask_utils
 
 from ask_sdk_core.skill_builder import SkillBuilder
@@ -14,25 +20,61 @@ from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.ui.simple_card import SimpleCard
+from ask_sdk_model.ui.standard_card import StandardCard
+from ask_sdk_model.ui.image import Image
 
 from ask_sdk_model import Response
-from requests import session
+from requests import Session, session
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+API_ROOT_URL = Path('https://image-retoucher-rest.herokuapp.com/api/')
+API_IMAGE_SLUG = Path('image')
+API_COLLAGE_URL = API_ROOT_URL / API_IMAGE_SLUG / 'static/collage'
+API_COMPARISON_SLUG = Path('comparison')
+API_SMALL_SLUG = Path('small')
+
+SLOT_PHOTO = 'PhotoSlot'
+SLOT_ID = 'IDSlot'
+SLOT_ID2 = 'IDSlot2'
+SLOT_METRIC = 'MetricSlot'
+SLOT_METRIC_VALUE = 'MetricValueSlot'
+SLOT_ALGO_NAME = 'AlgoNameSlot'
+
+ATTR_SESSION_CONTEXT = 'SessionContext'
+
+@dataclass
+class OperationDescriptor:
+    op : str = ''
+    val : int = ''
+
+@dataclass
+class SessionContext:
+    image_id : int = None
+    image_url : str = None
+    really_change : bool = False
+    operations : Deque[OperationDescriptor] = field(default_factory=deque)
+
 ATTR_TIME_SLOT = "TimeSlot"
 ATTR_SESSION_IMAGE = "SessionImage"
-ATTR_REALLY_LOAD_NEW_IMAGE = "ReallyLoadNewImage"
 
 class SessionImageDescriptor:
     loaded:bool = True
-    url:str = "https://voice-retouch-rest.herokuapp.com/todo/integrate/with/rest/api"
+    url:str = "http://image-retoucher-rest.herokuapp.com/image/0"
 
 
 def initialize_handler_attributes(handler_input:HandlerInput) -> None:
-    handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE] = False
+    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = SessionContext()
 
+def get_context(handler_input:HandlerInput) -> SessionContext:
+    return handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
+
+def set_context(handler_input:HandlerInput, context:SessionContext):
+    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = context
+
+def is_url_valid(url):
+	return requests.head(url).status_code < 400
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -62,28 +104,44 @@ class EditImageIntentHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("EditImageIntent")(handler_input)
 
+    def _update_context_and_return_outputs(self, context: SessionContext, image_id: any):
+        speak_output = f"Alright, let's load a photo to edit."
+        if image_id is None:
+            prompt_output = "If you see the photo you want to edit, say \"Edit image X\" where X is the label you see."
+            card = StandardCard(
+                title = 'Photo Selection',
+                text = 'Select an image from the card to edit, using the number next to it.',
+                image = Image(large_image_url=API_COLLAGE_URL)
+            )
+        else:
+            new_url = API_ROOT_URL / API_IMAGE_SLUG / str(image_id)
+            if is_url_valid(str(new_url)):
+                context.image_id = int(image_id)
+                context.image_url = new_url
+                card = StandardCard(
+                    title = f'Now Editing Photo {context.image_id}',
+                    text = 'Proceed to edit image parameters or apply algorithms',
+                    image = Image(large_image_url=context.image_url)
+            else:
+                raise ValueError('Invalid image ID!')
+        return speak_output, prompt_output, card
+
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         photo_synonym = slots["PhotoSlot"].value
-        time_str = slots["TimeSlot"].value
+        image_id = slots[SLOT_ID].value if slots[SLOT_ID].value is not None else slots[SLOT_ID2].value
 
-        session_image: SessionImageDescriptor = handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE]
-        really_load:bool = handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE]
-        if (session_image is None or really_load):
-            speak_output = f"Alright, let's load one {photo_synonym} to edit. Looking for photos taken {time_str}..."
-            prompt_output = "If you see the photo you want to edit, say \"Edit image X\" where X is the label you see. Otherwise, say \"Keep Browsing\". For now, hearing this response means an image is loaded."
-            time = parse_date(time_str)
-            card = SimpleCard(title="Photo Selection", content=f"TODO render card image to display photos taken\r\nat {time}, for user to select.")
-            handler_input.attributes_manager.persistent_attributes[ATTR_TIME_SLOT] = time
-            handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE] = SessionImageDescriptor()
-            handler_input.attributes_manager.persistent_attributes[ATTR_REALLY_LOAD_NEW_IMAGE] = False
+        context = get_context(handler_input)
+        if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0):
+            speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
         else:
-            speak_output = "It looks like you're already editing an image. If you really want to edit a new photo, just confirm by asking again."
+            speak_output = "It looks like you're already editing an image.\r\nIf you really want to edit a new photo, just confirm by asking again."
             prompt_output = speak_output
+            context.really_change = True
             card = SimpleCard(title="Confirm", content="Really edit a new photo?")
-        
 
+        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -104,8 +162,8 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
         slots = handler_input.request_envelope.request.intent.slots
         metric = slots["MetricSlot"].value
 
-        session_image: SessionImageDescriptor = handler_input.attributes_manager.persistent_attributes[ATTR_SESSION_IMAGE]
-        if (session_image is not None and session_image.loaded):
+        context = get_context(handler_input)
+        if (context.image_url is not None):
             speak_output = f"Alright, let's edit this photo's {metric}."
             prompt_output = "Just say \"higher\" or \"lower\" and I'll adjust the slider a bit less each time. You can say \"done\" when you're satisfied, or \"cancel.\""
             card = SimpleCard(title="Photo Editing", content="TODO render selected image in current state w/ histogram so user can see it")
@@ -121,6 +179,19 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
                 .ask(prompt_output)
                 .response
         )
+
+
+class SetSliderMetricIntentHandler(AbstractRequestHandler):
+    pass
+
+class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
+    pass
+
+class UndoChangesIntentHandler(AbstractRequestHandler):
+    pass
+
+class SaveImageIntentHandler(AbstractRequestHandler):
+    pass
 
 
 class HelpIntentHandler(AbstractRequestHandler):
@@ -223,15 +294,17 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 
 
 sb = SkillBuilder()
-
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(EditImageIntentHandler())
 sb.add_request_handler(EditSliderMetricIntentHandler())
+sb.add_request_handler(SetSliderMetricIntentHandler())
+sb.add_request_handler(ApplyAlgorithmIntentHandler())
+sb.add_request_handler(UndoChangesIntentHandler())
+sb.add_request_handler(SaveImageIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
-
 sb.add_exception_handler(CatchAllExceptionHandler())
 
 lambda_handler = sb.lambda_handler()

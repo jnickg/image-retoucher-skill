@@ -38,18 +38,26 @@
             "let's modify a {PhotoSlot}",
             "let's retouch a {PhotoSlot}",
             "let's touch up a {PhotoSlot}",
-            "edit {PhotoSlot} from {TimeSlot}",
-            "modify {PhotoSlot} from {TimeSlot}",
-            "retouch {PhotoSlot} from {TimeSlot}",
-            "touch up {PhotoSlot} from {TimeSlot}",
-            "edit a {PhotoSlot} from {TimeSlot}",
-            "modify a {PhotoSlot} from {TimeSlot}",
-            "retouch a {PhotoSlot} from {TimeSlot}",
-            "touch up a {PhotoSlot} from {TimeSlot}",
-            "let's edit a {PhotoSlot} from {TimeSlot}",
-            "let's modify a {PhotoSlot} from {TimeSlot}",
-            "let's retouch a {PhotoSlot} from {TimeSlot}",
-            "let's touch up a {PhotoSlot} from {TimeSlot}"
+            "edit {PhotoSlot} {IDSlot}",
+            "modify {PhotoSlot} {IDSlot}",
+            "retouch {PhotoSlot} {IDSlot}",
+            "touch up {PhotoSlot} {IDSlot}",
+            "edit a {PhotoSlot} {IDSlot}",
+            "modify a {PhotoSlot} {IDSlot}",
+            "retouch a {PhotoSlot} {IDSlot}",
+            "touch up a {PhotoSlot} {IDSlot}",
+            "let's edit a {PhotoSlot} {IDSlot}",
+            "let's modify a {PhotoSlot} {IDSlot}",
+            "let's retouch a {PhotoSlot} {IDSlot}",
+            "let's touch up a {PhotoSlot} {IDSlot}",
+            "edit the {IDSlot2} {PhotoSlot}",
+            "modify the {IDSlot2} {PhotoSlot}",
+            "retouch the {IDSlot2} {PhotoSlot}",
+            "touch up the {IDSlot2} {PhotoSlot}",
+            "let's edit the {IDSlot2} {PhotoSlot}",
+            "let's modify the {IDSlot2} {PhotoSlot}",
+            "let's retouch the {IDSlot2} {PhotoSlot}",
+            "let's touch up the {IDSlot2} {PhotoSlot}"
           ],
           "slots": [
             {
@@ -58,8 +66,12 @@
               "samples": []
             },
             {
-              "name": "TimeSlot",
-              "type": "AMAZON.DATE"
+              "name": "IDSlot",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "IDSlot2",
+              "type": "AMAZON.ORDINAL"
             }
           ]
         },
@@ -83,6 +95,104 @@
               "type": "SLIDER_METRIC_NAME",
               "samples": []
             }
+          ]
+        },
+        {
+          "name": "SetSliderMetricIntent",
+          "samples": [
+            "set {MetricSlot} to {MetricValueSlot}",
+            "change {MetricSlot} to {MetricValueSlot}",
+            "assign {MetricSlot} to {MetricValueSlot}",
+            "make {MetricSlot} {MetricValueSlot}",
+            "update {MetricSlot} to {MetricValueSlot}"
+          ],
+          "slots": [
+            {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
+              "samples": []
+            },
+            {
+              "name": "MetricValueSlot",
+              "type": "AMAZON.NUMBER"
+            }
+          ]
+        },
+        {
+          "name": "ApplyAlgorithmIntent",
+          "samples": [
+            "add algorithm",
+            "apply algorithm",
+            "run algorithm",
+            "use algorithm",
+            "add an algorithm",
+            "apply an algorithm",
+            "run an algorithm",
+            "use an algorithm",
+            "add {AlgoNameSlot}",
+            "apply {AlgoNameSlot}",
+            "run {AlgoNameSlot}",
+            "use {AlgoNameSlot}",
+            "add algorithm to my image",
+            "apply algorithm to my image",
+            "run algorithm to my image",
+            "use algorithm to my image",
+            "add an algorithm to my image",
+            "apply an algorithm to my image",
+            "run an algorithm to my image",
+            "use an algorithm to my image",
+            "add {AlgoNameSlot} to my image",
+            "apply {AlgoNameSlot} to my image",
+            "run {AlgoNameSlot} to my image",
+            "use {AlgoNameSlot} to my image"
+          ],
+          "slots": [
+            {
+              "name": "AlgoNameSlot",
+              "type": "ALGORITHM_NAME",
+              "samples": []
+            }
+          ]
+        },
+        {
+          "name": "UndoChangesIntent",
+          "samples": [
+            "cancel change",
+            "cancel edit",
+            "cancel adjustment",
+            "revert changes",
+            "revert edits",
+            "revert adjustments",
+            "undo changes",
+            "undo edits",
+            "undo adjustments",
+            "cancel last change",
+            "cancel last edit",
+            "cancel last adjustment",
+            "revert last changes",
+            "revert last edits",
+            "revert last adjustments",
+            "undo last changes",
+            "undo last edits",
+            "undo last adjustments"
+          ]
+        },
+        {
+          "name": "SaveImageIntent",
+          "samples": [
+            "save",
+            "finalize changes",
+            "commit changes",
+            "back-up changes",
+            "latch changes",
+            "store changes",
+            "save changes",
+            "finalize image",
+            "commit image",
+            "back-up image",
+            "latch image",
+            "store image",
+            "save image"
           ]
         }
       ],
@@ -132,7 +242,52 @@
             },
             {
               "name": {
-                "value": "exposure"
+                "value": "exposure",
+                "synonyms": [
+                  "brightness"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "saturation",
+                "synonyms": [
+                  "vibrance",
+                  "color intensity"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "tint",
+                "synonyms": [
+                  "hue"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ALGORITHM_NAME",
+          "values": [
+            {
+              "name": {
+                "value": "color transfer",
+                "synonyms": [
+                  "reinhard",
+                  "tone transfer",
+                  "tone mapping"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "histogram equalization",
+                "synonyms": [
+                  "contrast limited adaptive histogram equalization",
+                  "clahe",
+                  "pizer"
+                ]
               }
             }
           ]
