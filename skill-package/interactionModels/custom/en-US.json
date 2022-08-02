@@ -42,22 +42,14 @@
             "modify {PhotoSlot} {IDSlot}",
             "retouch {PhotoSlot} {IDSlot}",
             "touch up {PhotoSlot} {IDSlot}",
-            "edit a {PhotoSlot} {IDSlot}",
-            "modify a {PhotoSlot} {IDSlot}",
-            "retouch a {PhotoSlot} {IDSlot}",
-            "touch up a {PhotoSlot} {IDSlot}",
-            "let's edit a {PhotoSlot} {IDSlot}",
-            "let's modify a {PhotoSlot} {IDSlot}",
-            "let's retouch a {PhotoSlot} {IDSlot}",
-            "let's touch up a {PhotoSlot} {IDSlot}",
-            "edit the {IDSlot2} {PhotoSlot}",
-            "modify the {IDSlot2} {PhotoSlot}",
-            "retouch the {IDSlot2} {PhotoSlot}",
-            "touch up the {IDSlot2} {PhotoSlot}",
-            "let's edit the {IDSlot2} {PhotoSlot}",
-            "let's modify the {IDSlot2} {PhotoSlot}",
-            "let's retouch the {IDSlot2} {PhotoSlot}",
-            "let's touch up the {IDSlot2} {PhotoSlot}"
+            "let's edit {PhotoSlot} {IDSlot}",
+            "let's modify {PhotoSlot} {IDSlot}",
+            "let's retouch {PhotoSlot} {IDSlot}",
+            "let's touch up {PhotoSlot} {IDSlot}",
+            "I want to edit {PhotoSlot} {IDSlot}",
+            "I want to modify {PhotoSlot} {IDSlot}",
+            "I want to retouch {PhotoSlot} {IDSlot}",
+            "I want to touch up {PhotoSlot} {IDSlot}"
           ],
           "slots": [
             {
@@ -67,11 +59,23 @@
             },
             {
               "name": "IDSlot",
-              "type": "AMAZON.NUMBER"
-            },
-            {
-              "name": "IDSlot2",
-              "type": "AMAZON.ORDINAL"
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.IDSlot.Please"
+              },
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 0
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 9
+                }
+              ]
             }
           ]
         },
@@ -295,5 +299,33 @@
       ]
     }
   },
+  "prompts": [
+    {
+      "id": "Elicit.Slot.IDSlot.Please",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "Which image ID would you like to edit?"
+        },
+        {
+          "type": "PlainText",
+          "value": "Edit which image?"
+        }
+      ]
+    },
+    {
+      "id": "Slot.Validation.IDSlot.Range",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "Pick an ID between zero and nine"
+        },
+        {
+          "type": "PlainText",
+          "value": "The image ID needs to be between zero and nine"
+        }
+      ]
+    }
+  ],
   "version": "1"
 }
