@@ -262,8 +262,8 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         slots = handler_input.request_envelope.request.intent.slots
-        algo_name = slots[SLOT_ALGO_NAME]
-        param = slots[SLOT_ID]
+        algo_name = slots[SLOT_ALGO_NAME].value
+        param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
         if algo_name == ALGO_NAME_CLRXFR and param is None:
