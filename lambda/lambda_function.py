@@ -112,7 +112,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
         card = StandardCard(
             title = 'Image Retoucher',
             text = 'Select an image from the card to edit, using the number next to it.',
-            image = Image(large_image_url=API_COLLAGE_URL)
+            image = Image(large_image_url=str(API_COLLAGE_URL))
         )
         handler_input.response_builder.speak(speak_output)
         handler_input.response_builder.set_card(card)
