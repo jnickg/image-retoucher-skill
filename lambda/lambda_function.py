@@ -63,14 +63,18 @@ ATTR_TIME_SLOT = "TimeSlot"
 ATTR_SESSION_IMAGE = "SessionImage"
 
 def get_context(handler_input:HandlerInput) -> SessionContext:
-    return SessionContext(**json.loads(handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]))
+    cxt_json = handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
+    cxt = SessionContext(**json.loads(cxt_json))
+    logger.info(f'Deserializing context: {cxt_json} -> {cxt}')
+    return cxt
 
-def set_context(handler_input:HandlerInput, context:SessionContext):
-    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = json.dumps(asdict(context))
+def set_context(handler_input:HandlerInput, cxt:SessionContext):
+    cxt_json = json.dumps(asdict(cxt))
+    logger.info(f'Serializing context: {cxt} -> {cxt_json}')
+    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = cxt_json
 
 def initialize_handler_attributes(handler_input:HandlerInput) -> None:
     set_context(handler_input, SessionContext())
-
 
 def is_url_valid(url):
     logger.info(f'Testing validity of URL {url}')
@@ -92,6 +96,7 @@ def update_operation(cxt: SessionContext, opname: str, opval: int) -> SessionCon
             op.val = opval
             updated = True
     if not updated: cxt.operations.append(OperationDescriptor(op=opname, val=opval))
+    logger.info(f'Updated context: {cxt}')
     return cxt
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -220,6 +225,7 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         context = get_context(handler_input)
         if (context.image_url is not None):
             speak_output = f"Alright, setting {metric} to {value}."
+            prompt_output = speak_output
             context = update_operation(context, str(metric), int(value))
             new_url = build_image_url(context)
             card = StandardCard(
