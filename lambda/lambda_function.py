@@ -34,7 +34,7 @@ http = urllib3.PoolManager()
 API_PROTOCOL = 'https://'
 API_ROOT_URL = Path('image-retoucher-rest.herokuapp.com/api/')
 API_IMAGE_SLUG = Path('image')
-API_COLLAGE_URL = API_ROOT_URL / API_IMAGE_SLUG / 'static/collage'
+API_COLLAGE_URL = API_PROTOCOL + str(API_ROOT_URL / API_IMAGE_SLUG / 'static/collage')
 API_COMPARISON_SLUG = Path('comparison')
 API_SMALL_SLUG = Path('small')
 
