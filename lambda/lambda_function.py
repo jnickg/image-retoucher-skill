@@ -202,6 +202,7 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
             prompt_output = speak_output
             card = SimpleCard(title="Error", content="No loaded image in current session.")
 
+        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -238,6 +239,7 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
             prompt_output = speak_output
             card = SimpleCard(title="Error", content="No loaded image in current session.")
 
+        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -251,21 +253,51 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("ApplyAlgorithmIntent")(handler_input)
 
     def handle(self, handler_input):
-        return handler_input.response_builder.speak("I don't know how to do this yet.").response
+        context = get_context(handler_input)
+
+        # TODO DO
+        speak_output = "I don't know how to do this yet."
+
+        set_context(handler_input, context)
+        return (
+            handler_input.response_builder
+               .speak(speak_output)
+               .response
+        )
 
 class UndoChangesIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("UndoChangesIntent")(handler_input)
 
     def handle(self, handler_input):
-        return handler_input.response_builder.speak("I don't know how to do this yet.").response
+        context = get_context(handler_input)
+
+        # TODO DO
+        speak_output = "I don't know how to do this yet."
+
+        set_context(handler_input, context)
+        return (
+            handler_input.response_builder
+               .speak(speak_output)
+               .response
+        )
 
 class SaveImageIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("SaveImageIntent")(handler_input)
 
     def handle(self, handler_input):
-        return handler_input.response_builder.speak("I don't know how to do this yet.").response
+        context = get_context(handler_input)
+
+        # TODO DO
+        speak_output = "I don't know how to do this yet."
+
+        set_context(handler_input, context)
+        return (
+            handler_input.response_builder
+               .speak(speak_output)
+               .response
+        )
 
 
 class HelpIntentHandler(AbstractRequestHandler):
