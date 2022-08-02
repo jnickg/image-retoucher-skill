@@ -84,14 +84,12 @@ class LaunchRequestHandler(AbstractRequestHandler):
         speak_output = "Welcome to Image Retoucher! You can select a photo to edit, or if your device is showing one now, you can start editing."
         prompt_output = "What would you like to do?"
 
+        logger.info('Initializing handler attributes')
         initialize_handler_attributes(handler_input)
-
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .ask(prompt_output)
-                .response
-        )
+        logger.info('Sending response...')
+        handler_input.response_builder.speak(speak_output)
+        handler_input.response_builder.ask(prompt_output)
+        return handler_input.response_builder.response
 
 
 class EditImageIntentHandler(AbstractRequestHandler):
