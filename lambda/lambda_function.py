@@ -7,12 +7,12 @@
 import logging
 from multiprocessing.sharedctypes import Value
 from urllib import response
-from click import prompt
 from dataclasses import dataclass, field, asdict
 from typing import List
 from pathlib import Path
 import json
-import requests
+import urllib3
+
 import ask_sdk_core.utils as ask_utils
 
 from ask_sdk_core.skill_builder import SkillBuilder
@@ -28,6 +28,8 @@ from requests import Session, session
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+http = urllib3.PoolManager()
 
 API_ROOT_URL = Path('https://image-retoucher-rest.herokuapp.com/api/')
 API_IMAGE_SLUG = Path('image')
@@ -70,7 +72,7 @@ def initialize_handler_attributes(handler_input:HandlerInput) -> None:
 
 
 def is_url_valid(url):
-	return requests.head(url).status_code < 400
+	return http.request("GET", url).status < 400
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
