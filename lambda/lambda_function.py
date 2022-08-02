@@ -65,6 +65,11 @@ ATTR_SESSION_IMAGE = "SessionImage"
 def get_context(handler_input:HandlerInput) -> SessionContext:
     cxt_json = handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
     cxt = SessionContext(**json.loads(cxt_json))
+    ops = []
+    for o in cxt.operations:
+        ops.append(OperationDescriptor(**o))
+    cxt.operations = ops
+
     logger.info(f'Deserializing context: {cxt_json} -> {cxt}')
     return cxt
 
