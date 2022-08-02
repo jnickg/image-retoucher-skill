@@ -85,13 +85,14 @@ def build_image_url(cxt: SessionContext, comparison:bool = False) -> str:
     logger.info(f'Built full URL: {full_url}')
     return full_url
 
-def update_operation(cxt: SessionContext, opname: str, opval: int):
+def update_operation(cxt: SessionContext, opname: str, opval: int) -> SessionContext:
     updated = False
     for op in cxt.operations:
         if op.op == opname:
             op.val = opval
             updated = True
     if not updated: cxt.operations.append(OperationDescriptor(op=opname, val=opval))
+    return cxt
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -219,7 +220,7 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         context = get_context(handler_input)
         if (context.image_url is not None):
             speak_output = f"Alright, setting {metric} to {value}."
-            update_operation(context, str(metric), int(value))
+            context = update_operation(context, str(metric), int(value))
             new_url = build_image_url(context)
             card = StandardCard(
                 title = f'Updated Photo {context.image_id}',
