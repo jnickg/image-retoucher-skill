@@ -285,11 +285,13 @@
           "name": "SLIDER_METRIC_NAME",
           "values": [
             {
+              "id": "contrast",
               "name": {
                 "value": "contrast"
               }
             },
             {
+              "id": "exposure",
               "name": {
                 "value": "exposure",
                 "synonyms": [
@@ -298,6 +300,7 @@
               }
             },
             {
+              "id": "saturation",
               "name": {
                 "value": "saturation",
                 "synonyms": [
@@ -307,6 +310,7 @@
               }
             },
             {
+              "id": "tint",
               "name": {
                 "value": "tint",
                 "synonyms": [
@@ -320,6 +324,7 @@
           "name": "ALGORITHM_NAME",
           "values": [
             {
+              "id": "colorxfer",
               "name": {
                 "value": "color transfer",
                 "synonyms": [
@@ -330,6 +335,7 @@
               }
             },
             {
+              "id": "clahe",
               "name": {
                 "value": "histogram equalization",
                 "synonyms": [

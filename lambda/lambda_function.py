@@ -23,7 +23,7 @@ from ask_sdk_model.ui.simple_card import SimpleCard
 from ask_sdk_model.ui.standard_card import StandardCard
 from ask_sdk_model.ui.image import Image
 
-from ask_sdk_model import Response
+from ask_sdk_model import Response, Slot
 from requests import Session, session
 
 logger = logging.getLogger(__name__)
@@ -45,13 +45,8 @@ SLOT_METRIC = 'MetricSlot'
 SLOT_METRIC_VALUE = 'MetricValueSlot'
 SLOT_ALGO_NAME = 'AlgoNameSlot'
 
-ALGO_NAME_CLAHE = 'histogram equalization'
-ALGO_NAME_CLRXFR = 'color transfer'
-
-ALGO_OPNAMES_MAP = {
-    ALGO_NAME_CLAHE: 'clahe',
-    ALGO_NAME_CLRXFR: 'colorxfer'
-}
+ALGO_NAME_CLAHE = 'clahe'
+ALGO_NAME_CLRXFR = 'colorxfer'
 
 ATTR_SESSION_CONTEXT = 'SessionContext'
 
@@ -120,7 +115,6 @@ class LaunchRequestHandler(AbstractRequestHandler):
         return ask_utils.is_request_type("LaunchRequest")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
         speak_output = "Welcome to Image Retoucher! You can select a photo to edit, or if your device is showing one now, you can start editing."
         prompt_output = "What would you like to do?"
 
@@ -146,8 +140,8 @@ class EditImageIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("EditImageIntent")(handler_input)
 
     def _update_context_and_return_outputs(self, context: SessionContext, image_id: any):
-        speak_output = f"Alright, let's load a photo to edit."
         if image_id is None:
+            speak_output = f"Alright, let's edit a photo."
             prompt_output = "If you see the photo you want to edit, say \"Edit image X\" where X is the label you see."
             card = StandardCard(
                 title = 'Photo Selection',
@@ -155,6 +149,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 image = Image(large_image_url=API_COLLAGE_URL)
             )
         else:
+            speak_output = f"Alrightm let's edit photo {image_id}"
             new_url = API_PROTOCOL + str(API_ROOT_URL / API_IMAGE_SLUG / str(image_id))
             if is_url_valid(str(new_url)):
                 context.image_id = int(image_id)
@@ -164,13 +159,12 @@ class EditImageIntentHandler(AbstractRequestHandler):
                     text = 'Proceed to edit image parameters or apply algorithms',
                     image = Image(large_image_url=context.image_url)
                 )
-                prompt_output = 'Go ahead and start editing.'
+                prompt_output = "Go ahead and start editing. For example, you can say 'set exposure to 30' or 'apply histogram equalization.'"
             else:
                 raise ValueError('Invalid image ID!')
         return speak_output, prompt_output, card
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         photo_synonym = slots["PhotoSlot"].value
         image_id = slots[SLOT_ID].value
@@ -234,19 +228,20 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
-        metric = slots[SLOT_METRIC].value
+        metric_repeat = slots[SLOT_METRIC].value
+        metric = slots[SLOT_METRIC].name
         value = slots[SLOT_METRIC_VALUE].value
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
 
         context = get_context(handler_input)
         if (context.image_url is not None):
-            speak_output = f"Alright, setting {metric} to {value}."
+            speak_output = f"Alright, setting {metric_repeat} to {value}."
             prompt_output = speak_output
             context = update_operation(context, str(metric), int(value))
             new_url = build_image_url(context)
             card = StandardCard(
                 title = f'Updated Photo {context.image_id}',
-                text = f'{metric} is now {value}',
+                text = f'{metric_repeat} is now {value}',
                 image = Image(large_image_url=new_url)
             )
         else:
@@ -269,7 +264,7 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         slots = handler_input.request_envelope.request.intent.slots
-        algo_name = slots[SLOT_ALGO_NAME].value
+        algo_name = slots[SLOT_ALGO_NAME].name
         param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
@@ -280,8 +275,7 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
             raise ValueError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time")
 
         param = param if param is not None else 0
-        algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
-        context = update_operation(context, str(algo_op), int(param))
+        context = update_operation(context, str(algo_name), int(param))
         new_url = build_image_url(context)
         speak_output = f"Alright, applying {algo_name} to the image."
         prompt_output = speak_output
