@@ -45,8 +45,39 @@ SLOT_METRIC = 'MetricSlot'
 SLOT_METRIC_VALUE = 'MetricValueSlot'
 SLOT_ALGO_NAME = 'AlgoNameSlot'
 
-ALGO_NAME_CLAHE = 'clahe'
-ALGO_NAME_CLRXFR = 'colorxfer'
+METRIC_OPNAMES_MAP = {
+    'contrast': 'contrast',
+    'exposure': 'exposure',
+    'brightness': 'exposure',
+    'saturation': 'saturation',
+    'vibrance': 'saturation',
+    'color intensity': 'saturation',
+    'tint': 'tint',
+    'hue': 'tint'
+}
+
+ALGO_NAME_CLAHE = 'histogram equalization'
+ALGO_NAME_CLRXFR = 'color transfer'
+
+ALGO_OPNAMES_MAP = {
+    'contrast limited adaptive histogram equalization': 'clahe',
+    'histogram equalization': 'clahe',
+    'clahe': 'clahe',
+    'pizer': 'clahe',
+    'color transfer': 'colorxfer',
+    'reinhard': 'colorxfer',
+    'tone transfer': 'colorxfer',
+    'tone mapping': 'colorxfer'
+}
+
+def is_algo_name_val_clahe(algo_name: str) -> bool:
+    return (
+        algo_name == 'contrast limited adaptive histogram equalization' or
+        algo_name == 'histogram equalization' or
+        algo_name == 'clahe' or
+        algo_name == 'pizer'
+    )
+
 
 ATTR_SESSION_CONTEXT = 'SessionContext'
 
@@ -149,7 +180,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 image = Image(large_image_url=API_COLLAGE_URL)
             )
         else:
-            speak_output = f"Alrightm let's edit photo {image_id}"
+            speak_output = f"Alright, let's edit photo {image_id}"
             new_url = API_PROTOCOL + str(API_ROOT_URL / API_IMAGE_SLUG / str(image_id))
             if is_url_valid(str(new_url)):
                 context.image_id = int(image_id)
@@ -229,13 +260,14 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
-        metric = slots[SLOT_METRIC].name
+        metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
         value = slots[SLOT_METRIC_VALUE].value
+        value = value if value is not None else 0
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
 
         context = get_context(handler_input)
         if (context.image_url is not None):
-            speak_output = f"Alright, setting {metric_repeat} to {value}."
+            speak_output = f"Alright, setting {metric} to {value}."
             prompt_output = speak_output
             context = update_operation(context, str(metric), int(value))
             new_url = build_image_url(context)
@@ -264,18 +296,19 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         slots = handler_input.request_envelope.request.intent.slots
-        algo_name = slots[SLOT_ALGO_NAME].name
+        algo_name = slots[SLOT_ALGO_NAME].value
         param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
-        if algo_name == ALGO_NAME_CLRXFR and param is None:
+        if is_algo_name_val_clahe(str(algo_name)) and param is None:
             # TODO show collage card and prompt for image ID instead of raising error
             raise ValueError("Please specify which image ID you want to use with color transfer")
         if (context.image_url is None):
             raise ValueError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time")
 
         param = param if param is not None else 0
-        context = update_operation(context, str(algo_name), int(param))
+        algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
+        context = update_operation(context, str(algo_op), int(param))
         new_url = build_image_url(context)
         speak_output = f"Alright, applying {algo_name} to the image."
         prompt_output = speak_output
