@@ -347,6 +347,9 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
         if (len(context.operations) == 0):
             raise IRError("Hmm, there's nothing to undo", prompt="Try saying 'set brightness to 25'")
 
+        # TODO This is broken because if user sets exposure:50, tint:50, exposure:25, and then does
+        # "undo", tint will be reverted. Context needs a list of ALL operations, as well as one for
+        # building the URL. Or a function that takes just collapses them
         op = context.operations.pop()
         speak_output = f'OK, reverting the last change, which was {op.op}'
         new_url = build_image_url(context)
