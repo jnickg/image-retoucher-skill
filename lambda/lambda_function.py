@@ -195,7 +195,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 )
                 prompt_output = "Go ahead and start editing. For example, you can say 'set exposure to 30' or 'apply histogram equalization.'"
             else:
-                raise IRError("That image ID didn't work.", show_collage=True, prompt="Which image would you like to load? Pick an ID from the collage.")
+                raise IRError("That image ID didn't work.", show_collage=True, card_message="Try saying 'Edit image 0'", prompt="Which image would you like to load? Pick an ID from the collage.")
         return speak_output, prompt_output, card
 
     def handle(self, handler_input):
@@ -307,6 +307,7 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
         param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
+        algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
             # TODO show collage card and prompt for image ID instead of raising error
             raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, card_message="Try saying 'apply color transfer using image 0'", prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
@@ -341,13 +342,26 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         context = get_context(handler_input)
 
-        # TODO DO
-        speak_output = "I don't know how to do this yet."
+        if (context.image_url is None):
+            raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
+        if (len(context.operations) == 0):
+            raise IRError("Hmm, there's nothing to undo", prompt="Try saying 'set brightness to 25'")
+
+        op = context.operations.pop()
+        speak_output = f'OK, reverting the last change, which was {op.op}'
+        new_url = build_image_url(context)
+        card = StandardCard(
+            title = f'Updated Photo {context.image_id}',
+            text = f'Undid change: {op.op}',
+            image = Image(large_image_url=new_url)
+        )
 
         set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
+               .ask(speak_output)
+               .show_card(card)
                .response
         )
 
