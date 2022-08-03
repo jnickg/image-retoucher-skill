@@ -265,8 +265,12 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         metric_repeat = slots[SLOT_METRIC].value
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
         value = slots[SLOT_METRIC_VALUE].value
-        value = value if value is not None else 0
+        value = int(value) if value is not None else 0
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
+
+        if value < -100 or value > 100:
+            raise IRError(f"Sorry, but I don't know how to apply a value of {value}. Try using a range of negative one hundred to positive one hundred, where zero means 'no change.'")
+
 
         context = get_context(handler_input)
         if (context.image_url is not None):
@@ -305,7 +309,7 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
 
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
             # TODO show collage card and prompt for image ID instead of raising error
-            raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
+            raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, card_message="Try saying 'apply color transfer using image 0'", prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
         if (context.image_url is None):
             raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
 
@@ -461,7 +465,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
             if 'show_collage' in exception.kwargs and exception.kwargs['show_collage']:
                 card = StandardCard(
                     title = 'Image Retoucher',
-                    text = 'Select an image from the card to edit, using the number next to it.',
+                    text = 'Showing collage' if 'card_message' not in exception.kwargs else exception.kwargs['card_message'],
                     image = Image(large_image_url=str(API_COLLAGE_URL))
                 )
         else:
