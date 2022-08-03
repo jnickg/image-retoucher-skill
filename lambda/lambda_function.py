@@ -360,8 +360,8 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
         return (
             handler_input.response_builder
                .speak(speak_output)
+               .set_card(card)
                .ask(speak_output)
-               .show_card(card)
                .response
         )
 
