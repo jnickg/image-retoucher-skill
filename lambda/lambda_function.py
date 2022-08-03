@@ -31,6 +31,14 @@ logger.setLevel(logging.INFO)
 
 http = urllib3.PoolManager()
 
+class IRError(Exception):
+    def __init__(self, message: str, *args, **kwargs):
+        super().__init__(args)
+        self.message = message
+        self.kwargs = kwargs
+    def __str__(self) -> str:
+        return self.message
+
 API_PROTOCOL = 'https://'
 API_ROOT_URL = Path('image-retoucher-rest.herokuapp.com/api/')
 API_IMAGE_SLUG = Path('image')
@@ -70,13 +78,8 @@ ALGO_OPNAMES_MAP = {
     'tone mapping': 'colorxfer'
 }
 
-def is_algo_name_val_clahe(algo_name: str) -> bool:
-    return (
-        algo_name == 'contrast limited adaptive histogram equalization' or
-        algo_name == 'histogram equalization' or
-        algo_name == 'clahe' or
-        algo_name == 'pizer'
-    )
+def is_algo_name_val_colorxfer(algo_name: str) -> bool:
+    return ALGO_OPNAMES_MAP.get(algo_name, 'nop') == 'colorxfer'
 
 
 ATTR_SESSION_CONTEXT = 'SessionContext'
@@ -192,7 +195,7 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 )
                 prompt_output = "Go ahead and start editing. For example, you can say 'set exposure to 30' or 'apply histogram equalization.'"
             else:
-                raise ValueError('Invalid image ID!')
+                raise IRError("That image ID didn't work.", show_collage=True, prompt="Which image would you like to load? Pick an ID from the collage.")
         return speak_output, prompt_output, card
 
     def handle(self, handler_input):
@@ -300,11 +303,11 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
         param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
-        if is_algo_name_val_clahe(str(algo_name)) and param is None:
+        if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
             # TODO show collage card and prompt for image ID instead of raising error
-            raise ValueError("Please specify which image ID you want to use with color transfer")
+            raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
         if (context.image_url is None):
-            raise ValueError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time")
+            raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
@@ -448,13 +451,27 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         logger.error(exception, exc_info=True)
 
         speak_output = "Sorry, I had trouble doing what you asked. Please try again."
+        prompt_output = speak_output
+        card = None
+        if isinstance(exception, IRError):
+            speak_output = exception.message
+            if 'prompt' in exception.kwargs:
+                prompt_output = exception.kwargs['prompt']
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .ask(speak_output)
-                .response
-        )
+            if 'show_collage' in exception.kwargs and exception.kwargs['show_collage']:
+                card = StandardCard(
+                    title = 'Image Retoucher',
+                    text = 'Select an image from the card to edit, using the number next to it.',
+                    image = Image(large_image_url=str(API_COLLAGE_URL))
+                )
+        else:
+            speak_output = "Sorry, I had trouble doing what you asked. Please try again."
+
+        handler_input.response_builder.speak(speak_output)
+        handler_input.response_builder.ask(prompt_output)
+        if card is not None:
+            handler_input.response_builder.set_card(card)
+        return handler_input.response_builder.response
 
 # The SkillBuilder object acts as the entry point for your skill, routing all request and response
 # payloads to the handlers above. Make sure any new handlers or interceptors you've
