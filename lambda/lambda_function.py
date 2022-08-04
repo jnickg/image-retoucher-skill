@@ -124,13 +124,13 @@ class SessionContext:
 
     operations : List[OperationDescriptor] = field(default_factory=list)
 
-    def build_image_url(self):
+    def build_image_url(self, comparison:bool=False):
         full_url : str = self.image_url
         for op in self.operations:
             full_url += f'/{op.op}/{op.val}'
         if self.in_interactive_edit:
             full_url += f'/{self.interactive_edit_metric}/{self.interactive_edit_last_val}'
-        if self:
+        if comparison:
             full_url += f'/{API_COMPARISON_SLUG}'
         logger.info(f'Built full URL: {full_url}')
         return full_url
@@ -183,7 +183,7 @@ class SessionContext:
     def build_interactive_card(self):
         if not self.in_interactive_edit:
             raise IRError("Something went wrong: I can't build an interactive adjustment card when we're not interactively adjusting a metric.")
-        new_url = self.build_image_url()
+        new_url = self.build_image_url(comparison=True)
         card = StandardCard(
             title = f'Updated Photo {self.image_id}',
             text = f'Adjusting {self.interactive_edit_metric} by {self.interactive_edit_last_adjustment}',
@@ -510,7 +510,7 @@ class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
         elif context.interactive_edit_last_adjustment_dir == 'none':
             adjust_amount = 50
 
-        context.interactive_edit_last_val += 50
+        context.interactive_edit_last_val += adjust_amount
         context.interactive_edit_last_adjustment_dir = 'up'
         context.interactive_edit_last_adjustment = adjust_amount
 
@@ -553,7 +553,7 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
         elif context.interactive_edit_last_adjustment_dir == 'none':
             adjust_amount = 50
 
-        context.interactive_edit_last_val -= 50
+        context.interactive_edit_last_val -= adjust_amount
         context.interactive_edit_last_adjustment_dir = 'up'
         context.interactive_edit_last_adjustment = adjust_amount
 
