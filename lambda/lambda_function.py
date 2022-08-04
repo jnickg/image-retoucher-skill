@@ -514,12 +514,12 @@ class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
         context.interactive_edit_last_adjustment_dir = 'up'
         context.interactive_edit_last_adjustment = adjust_amount
 
-        speak_output = f'OK, raising {context.interactive_edit_metric} by {adjust_amount}.'
+        speak_output = f'OK, raising {context.interactive_edit_metric} by {adjust_amount}. '
 
         if context.interactive_edit_last_val >= 100:
             context.interactive_edit_last_val = 100
-            speak_output += "This is as high as it can go."
-        prompt_output = f"How's it look?"
+            speak_output += "This is as high as it can go. "
+        prompt_output = f"How's it look? "
         card = context.build_interactive_card()
 
         set_context(handler_input, context)
@@ -557,12 +557,12 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
         context.interactive_edit_last_adjustment_dir = 'up'
         context.interactive_edit_last_adjustment = adjust_amount
 
-        speak_output = f'OK, lowering {context.interactive_edit_metric} by {adjust_amount}.'
+        speak_output = f'OK, lowering {context.interactive_edit_metric} by {adjust_amount}. '
 
         if context.interactive_edit_last_val <= -100:
             context.interactive_edit_last_val = -100
-            speak_output += "This is as low as it can go."
-        prompt_output = f"How's it look?"
+            speak_output += "This is as low as it can go. "
+        prompt_output = f"How's it look? "
         card = context.build_interactive_card()
 
         set_context(handler_input, context)
