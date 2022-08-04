@@ -8,7 +8,12 @@ import logging
 from multiprocessing.sharedctypes import Value
 from urllib import response
 from dataclasses import dataclass, field, asdict
-from typing import List, Literal
+from typing import List
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from pathlib import Path
 import json
 import urllib3
