@@ -8,7 +8,7 @@ import logging
 from multiprocessing.sharedctypes import Value
 from urllib import response
 from dataclasses import dataclass, field, asdict
-from typing import List
+from typing import List, Literal
 from pathlib import Path
 import json
 import urllib3
@@ -38,6 +38,21 @@ class IRError(Exception):
         self.kwargs = kwargs
     def __str__(self) -> str:
         return self.message
+    def get_outputs(self):
+        speak_output = self.message
+        if 'say_metric_help' in self.kwargs and self.kwargs['say_metric_help']:
+            speak_output += '(By the way, valid metric values are: exposure, contrast, tint, and saturation.)'
+        prompt_output = speak_output
+        card = None
+        if 'prompt' in self.kwargs:
+            prompt_output = self.kwargs['prompt']
+        if 'show_collage' in self.kwargs and self.kwargs['show_collage']:
+            card = StandardCard(
+                title = 'Image Retoucher',
+                text = 'Showing collage' if 'card_message' not in self.kwargs else self.kwargs['card_message'],
+                image = Image(large_image_url=str(API_COLLAGE_URL))
+            )
+        return speak_output, prompt_output, card
 
 API_PROTOCOL = 'https://'
 API_ROOT_URL = Path('image-retoucher-rest.herokuapp.com/api/')
@@ -94,7 +109,82 @@ class SessionContext:
     image_id : int = None
     image_url : str = None
     really_change : bool = False
+    in_interactive_edit : bool = False
+    interactive_edit_metric : str = ''
+    interactive_edit_from_existing_op : bool = False
+    interactive_edit_first_val : int = 0
+    interactive_edit_last_val : int = 0
+    interactive_edit_last_adjustment : int = 0
+    interactive_edit_last_adjustment_dir : Literal['up', 'down', 'none'] = 'none'
+
     operations : List[OperationDescriptor] = field(default_factory=list)
+
+    def build_image_url(self):
+        full_url : str = self.image_url
+        for op in self.operations:
+            full_url += f'/{op.op}/{op.val}'
+        if self.in_interactive_edit:
+            full_url += f'/{self.interactive_edit_metric}/{self.interactive_edit_last_val}'
+        if self:
+            full_url += f'/{API_COMPARISON_SLUG}'
+        logger.info(f'Built full URL: {full_url}')
+        return full_url
+
+    def add_operation(self, opname: str, opval: int):
+        if opname not in set(METRIC_OPNAMES_MAP.values()) and opname not in set(ALGO_OPNAMES_MAP.values()):
+            raise IRError(f"Sorry, I don't recognize {opname}. You can apply color transfer, apply histogram equalization, or you can set or adjust a metric.", say_metric_help=True)
+        updated = False
+        for op in self.operations:
+            if op.op == opname:
+                op.val = opval
+                updated = True
+        if not updated: self.operations.append(OperationDescriptor(op=opname, val=opval))
+        logger.info(f'Updated context: {self}')
+
+    def enter_interactive_mode(self, metric:str):
+        if self.in_interactive_edit:
+            self.exit_interactive_mode('cancel')
+        self.in_interactive_edit = True
+        if metric not in set(METRIC_OPNAMES_MAP.values()):
+            raise IRError('Unrecognized metric for interactive edit mode.', say_metric_help=True)
+        self.interactive_edit_metric = metric
+        self.interactive_edit_last_adjustment = 0
+        self.interactive_edit_last_adjustment_dir = 'none'
+        self.interactive_edit_last_val = 0
+        self.interactive_edit_first_val = 0
+        existing_opnames = [op.op for op in self.operations]
+        if metric in existing_opnames:
+            self.interactive_edit_from_existing_op = True
+            existing_op_idx = existing_opnames.index(metric)
+            existing_op = self.operations.pop(existing_op_idx)
+            self.interactive_edit_last_val = existing_op.val
+            self.interactive_edit_first_val = existing_op.val
+
+    def exit_interactive_mode(self, what_do:Literal['confirm', 'cancel']):
+        if not self.in_interactive_edit:
+            return
+        if what_do == 'confirm':
+            self.add_operation(self.interactive_edit_metric, self.interactive_edit_last_val)
+        elif what_do == 'cancel' and self.interactive_edit_from_existing_op:
+            self.add_operation(self.interactive_edit_metric, self.interactive_edit_first_valr)
+
+        self.interactive_edit_metric = ''
+        self.interactive_edit_first_val = 0
+        self.interactive_edit_last_val = 0
+        self.interactive_edit_last_adjustment = 0
+        self.interactive_edit_last_adjustment_dir = 'none'
+        self.in_interactive_edit = False
+
+    def build_interactive_card(self):
+        if not self.in_interactive_edit:
+            raise IRError("Something went wrong: I can't build an interactive adjustment card when we're not interactively adjusting a metric.")
+        new_url = self.build_image_url()
+        card = StandardCard(
+            title = f'Updated Photo {self.image_id}',
+            text = f'Adjusting {self.interactive_edit_metric} by {self.interactive_edit_last_adjustment}',
+            image = Image(large_image_url=new_url)
+        )
+        return card
 
 ATTR_TIME_SLOT = "TimeSlot"
 ATTR_SESSION_IMAGE = "SessionImage"
@@ -121,25 +211,6 @@ def initialize_handler_attributes(handler_input:HandlerInput) -> None:
 def is_url_valid(url):
     logger.info(f'Testing validity of URL {url}')
     return http.request("GET", url).status < 400
-
-def build_image_url(cxt: SessionContext, comparison:bool = False) -> str:
-    full_url : str = cxt.image_url
-    for op in cxt.operations:
-        full_url += f'/{op.op}/{op.val}'
-    if comparison:
-        full_url += f'/{API_COMPARISON_SLUG}'
-    logger.info(f'Built full URL: {full_url}')
-    return full_url
-
-def update_operation(cxt: SessionContext, opname: str, opval: int) -> SessionContext:
-    updated = False
-    for op in cxt.operations:
-        if op.op == opname:
-            op.val = opval
-            updated = True
-    if not updated: cxt.operations.append(OperationDescriptor(op=opname, val=opval))
-    logger.info(f'Updated context: {cxt}')
-    return cxt
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -208,6 +279,8 @@ class EditImageIntentHandler(AbstractRequestHandler):
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
             context.operations.clear()
             context.really_change = False
+        elif context.in_interactive_edit:
+            raise IRError("You're currently interactively editing a slider. To edit a new image, first say 'cancel'")
         else:
             speak_output = "It looks like you're already editing an image.\r\nIf you really want to edit a new photo, just confirm by asking again."
             prompt_output = speak_output
@@ -233,13 +306,17 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         slots = handler_input.request_envelope.request.intent.slots
-        metric = slots[SLOT_METRIC].value
+        metric_repeat = slots[SLOT_METRIC].value
+        metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
 
         context = get_context(handler_input)
         if (context.image_url is not None):
+            context.enter_interactive_mode(str(metric))
             speak_output = f"Alright, let's edit this photo's {metric}."
             prompt_output = "Just say \"higher\" or \"lower\" and I'll adjust the slider a bit less each time. You can say \"done\" when you're satisfied, or \"cancel.\""
-            card = SimpleCard(title="Photo Editing", content="TODO render selected image in current state w/ histogram so user can see it")
+            card = context.build_interactive_card()
+        elif context.in_interactive_edit:
+            raise IRError("You're currently interactively editing a slider. To interactively edit another slider, first say 'cancel'")
         else:
             speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit a photo from today\" or another time"
             prompt_output = speak_output
@@ -276,13 +353,15 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
         if (context.image_url is not None):
             speak_output = f"Alright, setting {metric} to {value}."
             prompt_output = speak_output
-            context = update_operation(context, str(metric), int(value))
-            new_url = build_image_url(context)
+            context.add_operation(str(metric), int(value))
+            new_url = context.build_image_url()
             card = StandardCard(
                 title = f'Updated Photo {context.image_id}',
                 text = f'{metric_repeat} is now {value}',
                 image = Image(large_image_url=new_url)
             )
+        elif context.in_interactive_edit:
+            raise IRError("You're currently interactively editing a slider. To simply set a slider, first say 'cancel'")
         else:
             speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time"
             prompt_output = speak_output
@@ -307,17 +386,20 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
         param = slots[SLOT_ID].value
         context = get_context(handler_input)
 
+        if context.image_url is None:
+            raise IRError("Hmm, we're not yet editing an image, so I can't apply an algorithm.", show_collage=True)
+        if context.in_interactive_edit:
+            raise IRError("You're currently interactively editing a slider. To apply an algorithm instead, first say 'cancel'")
+
         algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
             # TODO show collage card and prompt for image ID instead of raising error
             raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, card_message="Try saying 'apply color transfer using image 0'", prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
-        if (context.image_url is None):
-            raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
-        context = update_operation(context, str(algo_op), int(param))
-        new_url = build_image_url(context)
+        context.add_operation(str(algo_op), int(param))
+        new_url = context.build_image_url()
         speak_output = f"Alright, applying {algo_name} to the image."
         prompt_output = speak_output
         card = StandardCard(
@@ -344,6 +426,8 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
 
         if (context.image_url is None):
             raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
+        if context.in_interactive_edit:
+            raise IRError("Right now I don't support undo during interactive edits. If you don't like this interactive edit, just cancel and try again. If you don't want to do it interactively, you can also just say 'set exposure to 37'")
         if (len(context.operations) == 0):
             raise IRError("Hmm, there's nothing to undo", prompt="Try saying 'set brightness to 25'")
 
@@ -352,7 +436,7 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
         # building the URL. Or a function that takes just collapses them
         op = context.operations.pop()
         speak_output = f'OK, reverting the last change, which was {op.op}'
-        new_url = build_image_url(context)
+        new_url = context.build_image_url()
         card = StandardCard(
             title = f'Updated Photo {context.image_id}',
             text = f'Undid change: {op.op}',
@@ -375,13 +459,113 @@ class SaveImageIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         context = get_context(handler_input)
 
-        # TODO DO
         speak_output = "I don't know how to do this yet."
+        prompt_output = speak_output
+        card = None
+
+        if context.in_interactive_edit:
+            speak_output = f"OK, committing changes to {context.interactive_edit_metric}. Setting it to {context.interactive_edit_last_val}"
+            prompt_output = speak_output
+            context.exit_interactive_mode('confirm')
+            new_url = context.build_image_url()
+            card = StandardCard(
+                title = f'Updated Photo {context.image_id}',
+                text = f'Done with interactive editing',
+                image = Image(large_image_url=new_url)
+            )
+        elif context.image_url is not None:
+            raise IRError(f"I don't yet support saving images to a database, sorry.")
+
+        set_context(handler_input, context)
+        handler_input.response_builder.speak(speak_output)
+        handler_input.response_builder.ask(prompt_output)
+        if card is not None:
+            handler_input.response_builder.set_card(card)
+        return handler_input.response_builder.response
+
+
+class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input) -> bool:
+        return (
+            ask_utils.is_intent_name("RaiseSliderInteractivelyIntent")(handler_input)
+            and get_context(handler_input).in_interactive_edit
+        )
+
+    def handle(self, handler_input):
+        context = get_context(handler_input)
+
+        if not context.in_interactive_edit:
+            raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
+
+        adjust_amount = 0
+        if context.interactive_edit_last_adjustment_dir == 'up':
+            adjust_amount = context.interactive_edit_last_adjustment
+        elif context.interactive_edit_last_adjustment_dir == 'down':
+            adjust_amount = context.interactive_edit_last_adjustment // 2
+        elif context.interactive_edit_last_adjustment_dir == 'none':
+            adjust_amount = 50
+
+        context.interactive_edit_last_val += 50
+        context.interactive_edit_last_adjustment_dir = 'up'
+        context.interactive_edit_last_adjustment = adjust_amount
+
+        speak_output = f'OK, raising {context.interactive_edit_metric} by {adjust_amount}.'
+
+        if context.interactive_edit_last_val >= 100:
+            context.interactive_edit_last_val = 100
+            speak_output += "This is as high as it can go."
+        prompt_output = f"How's it look?"
+        card = context.build_interactive_card()
 
         set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
+               .set_card(card)
+               .ask(prompt_output)
+               .response
+        )
+
+
+class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input) -> bool:
+        return (
+            ask_utils.is_intent_name("LowerSliderInteractivelyIntent")(handler_input)
+            and get_context(handler_input).in_interactive_edit
+        )
+
+    def handle(self, handler_input):
+        context = get_context(handler_input)
+
+        if not context.in_interactive_edit:
+            raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
+
+        adjust_amount = 0
+        if context.interactive_edit_last_adjustment_dir == 'down':
+            adjust_amount = context.interactive_edit_last_adjustment
+        elif context.interactive_edit_last_adjustment_dir == 'up':
+            adjust_amount = context.interactive_edit_last_adjustment // 2
+        elif context.interactive_edit_last_adjustment_dir == 'none':
+            adjust_amount = 50
+
+        context.interactive_edit_last_val -= 50
+        context.interactive_edit_last_adjustment_dir = 'up'
+        context.interactive_edit_last_adjustment = adjust_amount
+
+        speak_output = f'OK, lowering {context.interactive_edit_metric} by {adjust_amount}.'
+
+        if context.interactive_edit_last_val <= -100:
+            context.interactive_edit_last_val = -100
+            speak_output += "This is as low as it can go."
+        prompt_output = f"How's it look?"
+        card = context.build_interactive_card()
+
+        set_context(handler_input, context)
+        return (
+            handler_input.response_builder
+               .speak(speak_output)
+               .set_card(card)
+               .ask(prompt_output)
                .response
         )
 
@@ -412,12 +596,18 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
                 ask_utils.is_intent_name("AMAZON.StopIntent")(handler_input))
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
+        context = get_context(handler_input)
         speak_output = "Goodbye!"
+        prompt_output = speak_output
+        if context.in_interactive_edit:
+            context.exit_interactive_mode('cancel')
+            speak_output = 'OK, canceling the interactive edit session.'
+            prompt_output = 'What would you like to do next?'
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
+                .ask(prompt_output)
                 .response
         )
 
@@ -475,16 +665,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         prompt_output = speak_output
         card = None
         if isinstance(exception, IRError):
-            speak_output = exception.message
-            if 'prompt' in exception.kwargs:
-                prompt_output = exception.kwargs['prompt']
-
-            if 'show_collage' in exception.kwargs and exception.kwargs['show_collage']:
-                card = StandardCard(
-                    title = 'Image Retoucher',
-                    text = 'Showing collage' if 'card_message' not in exception.kwargs else exception.kwargs['card_message'],
-                    image = Image(large_image_url=str(API_COLLAGE_URL))
-                )
+            speak_output, prompt_output, card = exception.get_outputs()
         else:
             speak_output = "Sorry, I had trouble doing what you asked. Please try again."
 
@@ -503,6 +684,8 @@ sb = SkillBuilder()
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(EditImageIntentHandler())
 sb.add_request_handler(EditSliderMetricIntentHandler())
+sb.add_request_handler(LowerSliderInteractivelyIntentHandler())
+sb.add_request_handler(RaiseSliderInteractivelyIntentHandler())
 sb.add_request_handler(SetSliderMetricIntentHandler())
 sb.add_request_handler(ApplyAlgorithmIntentHandler())
 sb.add_request_handler(UndoChangesIntentHandler())

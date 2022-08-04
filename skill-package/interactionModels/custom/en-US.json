@@ -243,6 +243,18 @@
             "store image",
             "save image"
           ]
+        },
+        {
+          "name": "RaiseSliderInteractivelyIntent",
+          "samples": [
+
+          ]
+        },
+        {
+          "name": "LowerSliderInteractivelyIntent",
+          "samples": [
+
+          ]
         }
       ],
       "types": [
