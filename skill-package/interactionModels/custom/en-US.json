@@ -247,13 +247,31 @@
         {
           "name": "RaiseSliderInteractivelyIntent",
           "samples": [
-
+            "make it higher",
+            "brighter",
+            "more",
+            "right",
+            "up",
+            "more vivid",
+            "increase",
+            "adjust up",
+            "raise",
+            "go up"
           ]
         },
         {
           "name": "LowerSliderInteractivelyIntent",
           "samples": [
-
+            "make it lower",
+            "darker",
+            "less",
+            "left",
+            "down",
+            "less vivid",
+            "decrease",
+            "adjust down",
+            "lower",
+            "go down"
           ]
         }
       ],
