@@ -676,6 +676,7 @@ class IntentReflectorHandler(AbstractRequestHandler):
         return (
             handler_input.response_builder
                 .speak(speak_output)
+                .ask(speak_output)
                 .response
         )
 
@@ -721,6 +722,7 @@ sb.add_request_handler(RaiseSliderInteractivelyIntentHandler())
 sb.add_request_handler(SetSliderMetricIntentHandler())
 sb.add_request_handler(ApplyAlgorithmIntentHandler())
 sb.add_request_handler(UndoChangesIntentHandler())
+sb.add_request_handler(CompareImageIntentHandler())
 sb.add_request_handler(SaveImageIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
