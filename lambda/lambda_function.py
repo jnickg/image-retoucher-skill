@@ -37,13 +37,32 @@ logger.setLevel(logging.INFO)
 http = urllib3.PoolManager()
 
 class IRError(Exception):
+    """
+    Base error type for Image Retoucher. Contains rich information about what went wrong, so a
+    custom handler (below) can display useful feedback to the end user.
+    """
     def __init__(self, message: str, *args, **kwargs):
         super().__init__(args)
         self.message = message
+        """
+        The message to be logged and told to the user.
+        """
+
         self.kwargs = kwargs
+        """
+        A collection of keyword arguments consumed when this type generates outputs for the user.
+        """
+
     def __str__(self) -> str:
         return self.message
+
     def get_outputs(self):
+        """
+        Generates speak, prompt, and card outputs for the Alexa device to share with the user.
+        The contents of those outputs depend on the data stored in this error type, and any flags
+        set in its keyword arguments.
+        """
+
         speak_output = self.message
         if 'say_metric_help' in self.kwargs and self.kwargs['say_metric_help']:
             speak_output += '(By the way, valid metric values are: exposure, contrast, tint, and saturation.)'
@@ -106,25 +125,89 @@ ATTR_SESSION_CONTEXT = 'SessionContext'
 
 @dataclass
 class OperationDescriptor:
+    """
+    A simple, serializable descriptor of an operation occurring on an image. Used to build URLs
+    """
+
     op : str = ''
-    val : int = ''
+    """
+    The name of the operation
+    """
+
+    val : int = 0
+    """
+    The parameter associated with this operation. Depending on the operation, this value may be
+    ignored.
+    """
 
 @dataclass
 class SessionContext:
+    """
+    The stateful context for a user's editing session. Contains all state data, and includes many
+    helper functions for intent handlers to use.
+    """
+
     image_id : int = None
+    """
+    The numerical ID of the image currently being edited, or None if no image is being edited.
+    """
+
     image_url : str = None
+    """
+    The base URL of the iamge currently being edited. Used to build URLs with operations
+    """
+
     really_change : bool = False
+    """
+    Confirmation flag for changing the currently-edited image
+    """
+
     in_interactive_edit : bool = False
+    """
+    Whether we are in an interactive edit mode for some slider.
+    """
+
     interactive_edit_metric : str = ''
+    """
+    The name of the slider currently being edited interactively, or None
+    """
+
     interactive_edit_from_existing_op : bool = False
+    """
+    Whether this interactive editing session is modifying a slider that had already been set
+    earlier in the overall editing session.
+    """
+
     interactive_edit_first_val : int = 0
+    """
+    The first value that was set during this interactive editing session. Used when cancelling
+    to restore an existing operation.
+    """
+
     interactive_edit_last_val : int = 0
+    """
+    The last value that was set after an adjustment.
+    """
+
     interactive_edit_last_adjustment : int = 0
+    """
+    The magnitude of the last adjustment.
+    """
+
     interactive_edit_last_adjustment_dir : Literal['up', 'down', 'none'] = 'none'
+    """
+    The direction of the last adjustment. 'none' means the editing session just started.
+    """
 
     operations : List[OperationDescriptor] = field(default_factory=list)
+    """
+    A list (treated like a stack) of operations being run on the base image
+    """
 
     def build_image_url(self, comparison:bool=False):
+        """
+        Using the context's current state, and any specified flags, builds a valid image URL to render the image.
+        """
         full_url : str = self.image_url
         for op in self.operations:
             full_url += f'/{op.op}/{op.val}'
@@ -136,6 +219,9 @@ class SessionContext:
         return full_url
 
     def add_operation(self, opname: str, opval: int):
+        """
+        Adds a new operation to the context's operation stack, to apply to the currently-edited image.
+        """
         if opname not in set(METRIC_OPNAMES_MAP.values()) and opname not in set(ALGO_OPNAMES_MAP.values()):
             raise IRError(f"Sorry, I don't recognize {opname}. You can apply color transfer, apply histogram equalization, or you can set or adjust a metric.", say_metric_help=True)
         updated = False
@@ -147,6 +233,9 @@ class SessionContext:
         logger.info(f'Updated context: {self}')
 
     def enter_interactive_mode(self, metric:str):
+        """
+        Enters interactive slider editing mode.
+        """
         if self.in_interactive_edit:
             self.exit_interactive_mode('cancel')
         self.in_interactive_edit = True
@@ -166,6 +255,9 @@ class SessionContext:
             self.interactive_edit_first_val = existing_op.val
 
     def exit_interactive_mode(self, what_do:Literal['confirm', 'cancel']):
+        """
+        Exits interactive slider editing mode, restoring the image to the last state.
+        """
         if not self.in_interactive_edit:
             return
         if what_do == 'confirm':
@@ -181,6 +273,9 @@ class SessionContext:
         self.in_interactive_edit = False
 
     def build_interactive_card(self):
+        """
+        Builds the card used during interactive editing sessions
+        """
         if not self.in_interactive_edit:
             raise IRError("Something went wrong: I can't build an interactive adjustment card when we're not interactively adjusting a metric.")
         new_url = self.build_image_url(comparison=True)
@@ -603,8 +698,18 @@ class HelpIntentHandler(IRRequestHandler):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
 
-    def handle_inner(self, handler_input, context):
-        speak_output = "You can load a photo to edit, or if your device is showing one now, you can start editing."
+    def handle_inner(self, handler_input, context:SessionContext):
+        speak_output = "Image Retoucher is an interactive photo editing skill. "
+        if context.image_url is None:
+            speak_output += "You can load a photo to edit by saying 'edit image 0.' "
+        else:
+            speak_output = "You have an image to edit, so try adjusting exposure, contrast, saturation, or tint. You can also apply histogram equalization, or color transfer to use the colors from another image. "
+        if context.in_interactive_edit:
+            speak_output = "You're editing a slider right now. Try saying 'higher' or 'lower' depending on how you want to change it. When you're satisfied, say 'commit changes.' If you want to stop, just say 'cancel.' "
+        
+        if len(context.operations) > 2:
+            speak_output += "By the way, you've made a lot of changes to this image. You can try saying 'compare to original' to see it right next to the un-edited version."
+
         return (
             handler_input.response_builder
                 .speak(speak_output)
