@@ -13,7 +13,7 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
-
+from abc import abstractmethod
 from pathlib import Path
 import json
 import urllib3
@@ -243,7 +243,19 @@ class LaunchRequestHandler(AbstractRequestHandler):
         return handler_input.response_builder.response
 
 
-class EditImageIntentHandler(AbstractRequestHandler):
+class IRRequestHandler(AbstractRequestHandler):
+    @abstractmethod
+    def handle_inner(self, handler_input, context) -> Response:
+        pass
+    def handle(self, handler_input) -> Response:
+        context = get_context(handler_input)
+        try:
+            response = self.handle_inner(handler_input, context)
+            return response
+        finally:
+            set_context(handler_input, context)
+
+class EditImageIntentHandler(IRRequestHandler):
     """Handler for Edit Image Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
@@ -274,12 +286,10 @@ class EditImageIntentHandler(AbstractRequestHandler):
                 raise IRError("That image ID didn't work.", show_collage=True, card_message="Try saying 'Edit image 0'", prompt="Which image would you like to load? Pick an ID from the collage.")
         return speak_output, prompt_output, card
 
-    def handle(self, handler_input):
+    def handle_inner(self, handler_input, context):
         slots = handler_input.request_envelope.request.intent.slots
-        photo_synonym = slots["PhotoSlot"].value
         image_id = slots[SLOT_ID].value
 
-        context = get_context(handler_input)
         if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0) or context.really_change:
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
             context.operations.clear()
@@ -292,7 +302,6 @@ class EditImageIntentHandler(AbstractRequestHandler):
             context.really_change = True
             card = SimpleCard(title="Confirm", content="Really edit a new photo?")
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -302,19 +311,17 @@ class EditImageIntentHandler(AbstractRequestHandler):
         )
 
 
-class EditSliderMetricIntentHandler(AbstractRequestHandler):
+class EditSliderMetricIntentHandler(IRRequestHandler):
     """Handler for Edit Slider Metric Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("EditSliderMetricIntent")(handler_input)
 
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
+    def handle_inner(self, handler_input, context):
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
 
-        context = get_context(handler_input)
         if (context.image_url is not None):
             context.enter_interactive_mode(str(metric))
             speak_output = f"Alright, let's edit this photo's {metric}."
@@ -327,7 +334,6 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
             prompt_output = speak_output
             card = SimpleCard(title="Error", content="No loaded image in current session.")
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -337,12 +343,11 @@ class EditSliderMetricIntentHandler(AbstractRequestHandler):
         )
 
 
-class SetSliderMetricIntentHandler(AbstractRequestHandler):
+class SetSliderMetricIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("SetSliderMetricIntent")(handler_input)
 
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
+    def handle_inner(self, handler_input, context):
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
@@ -354,7 +359,6 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
             raise IRError(f"Sorry, but I don't know how to apply a value of {value}. Try using a range of negative one hundred to positive one hundred, where zero means 'no change.'")
 
 
-        context = get_context(handler_input)
         if (context.image_url is not None):
             speak_output = f"Alright, setting {metric} to {value}."
             prompt_output = speak_output
@@ -372,7 +376,6 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
             prompt_output = speak_output
             card = SimpleCard(title="Error", content="No loaded image in current session.")
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -381,15 +384,14 @@ class SetSliderMetricIntentHandler(AbstractRequestHandler):
                 .response
         )
 
-class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
+class ApplyAlgorithmIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("ApplyAlgorithmIntent")(handler_input)
 
-    def handle(self, handler_input):
+    def handle_inner(self, handler_input, context):
         slots = handler_input.request_envelope.request.intent.slots
         algo_name = slots[SLOT_ALGO_NAME].value
         param = slots[SLOT_ID].value
-        context = get_context(handler_input)
 
         if context.image_url is None:
             raise IRError("Hmm, we're not yet editing an image, so I can't apply an algorithm.", show_collage=True)
@@ -413,7 +415,6 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
             image = Image(large_image_url=new_url)
         )
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
@@ -422,13 +423,11 @@ class ApplyAlgorithmIntentHandler(AbstractRequestHandler):
                .response
         )
 
-class UndoChangesIntentHandler(AbstractRequestHandler):
+class UndoChangesIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("UndoChangesIntent")(handler_input)
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
-
+    def handle_inner(self, handler_input, context):
         if (context.image_url is None):
             raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
         if context.in_interactive_edit:
@@ -448,7 +447,6 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
             image = Image(large_image_url=new_url)
         )
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
@@ -457,13 +455,11 @@ class UndoChangesIntentHandler(AbstractRequestHandler):
                .response
         )
 
-class SaveImageIntentHandler(AbstractRequestHandler):
+class SaveImageIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return ask_utils.is_intent_name("SaveImageIntent")(handler_input)
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
-
+    def handle_inner(self, handler_input, context):
         speak_output = "I don't know how to do this yet."
         prompt_output = speak_output
         card = None
@@ -481,7 +477,6 @@ class SaveImageIntentHandler(AbstractRequestHandler):
         elif context.image_url is not None:
             raise IRError(f"I don't yet support saving images to a database, sorry.")
 
-        set_context(handler_input, context)
         handler_input.response_builder.speak(speak_output)
         handler_input.response_builder.ask(prompt_output)
         if card is not None:
@@ -489,16 +484,14 @@ class SaveImageIntentHandler(AbstractRequestHandler):
         return handler_input.response_builder.response
 
 
-class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
+class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return (
             ask_utils.is_intent_name("RaiseSliderInteractivelyIntent")(handler_input)
             and get_context(handler_input).in_interactive_edit
         )
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
-
+    def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
             raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
 
@@ -519,10 +512,13 @@ class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
         if context.interactive_edit_last_val >= 100:
             context.interactive_edit_last_val = 100
             speak_output += "This is as high as it can go. "
+
+        if adjust_amount < 10:
+            speak_output += "Looks like we're dialing it in."
+
         prompt_output = f"How's it look? "
         card = context.build_interactive_card()
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
@@ -532,16 +528,14 @@ class RaiseSliderInteractivelyIntentHandler(AbstractRequestHandler):
         )
 
 
-class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
+class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return (
             ask_utils.is_intent_name("LowerSliderInteractivelyIntent")(handler_input)
             and get_context(handler_input).in_interactive_edit
         )
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
-
+    def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
             raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
 
@@ -554,7 +548,7 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
             adjust_amount = 50
 
         context.interactive_edit_last_val -= adjust_amount
-        context.interactive_edit_last_adjustment_dir = 'up'
+        context.interactive_edit_last_adjustment_dir = 'down'
         context.interactive_edit_last_adjustment = adjust_amount
 
         speak_output = f'OK, lowering {context.interactive_edit_metric} by {adjust_amount}. '
@@ -562,10 +556,13 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
         if context.interactive_edit_last_val <= -100:
             context.interactive_edit_last_val = -100
             speak_output += "This is as low as it can go. "
+
+        if adjust_amount < 10:
+            speak_output += "Looks like we're dialing it in."
+
         prompt_output = f"How's it look? "
         card = context.build_interactive_card()
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
@@ -575,15 +572,13 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
         )
 
 
-class CompareImageIntentHandler(AbstractRequestHandler):
+class CompareImageIntentHandler(IRRequestHandler):
     def can_handle(self, handler_input) -> bool:
         return (
             ask_utils.is_intent_name("CompareImageIntent")(handler_input)
         )
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
-
+    def handle_inner(self, handler_input, context):
         new_url = context.build_image_url(comparison=True)
         card = StandardCard(
             title = f'Side-by-side',
@@ -594,7 +589,6 @@ class CompareImageIntentHandler(AbstractRequestHandler):
         speak_output = "OK, here's a comparison of your edits with the original image."
         prompt_output = speak_output
 
-        set_context(handler_input, context)
         return (
             handler_input.response_builder
                .speak(speak_output)
@@ -603,16 +597,14 @@ class CompareImageIntentHandler(AbstractRequestHandler):
                .response
         )
 
-class HelpIntentHandler(AbstractRequestHandler):
+class HelpIntentHandler(IRRequestHandler):
     """Handler for Help Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
 
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
+    def handle_inner(self, handler_input, context):
         speak_output = "You can load a photo to edit, or if your device is showing one now, you can start editing."
-
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -621,22 +613,29 @@ class HelpIntentHandler(AbstractRequestHandler):
         )
 
 
-class CancelOrStopIntentHandler(AbstractRequestHandler):
+class CancelOrStopIntentHandler(IRRequestHandler):
     """Single handler for Cancel and Stop Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return (ask_utils.is_intent_name("AMAZON.CancelIntent")(handler_input) or
                 ask_utils.is_intent_name("AMAZON.StopIntent")(handler_input))
 
-    def handle(self, handler_input):
-        context = get_context(handler_input)
+    def handle_inner(self, handler_input, context):
         speak_output = "Goodbye!"
         prompt_output = speak_output
         if context.in_interactive_edit:
             context.exit_interactive_mode('cancel')
             speak_output = 'OK, canceling the interactive edit session.'
             prompt_output = 'What would you like to do next?'
+            new_url = context.build_image_url(comparison=True)
+            card = StandardCard(
+                title = f'Image {context.image_id}',
+                image = Image(large_image_url=new_url)
+            )
 
+
+        if card is not None:
+            handler_input.response_builder.set_card(card)
         return (
             handler_input.response_builder
                 .speak(speak_output)
