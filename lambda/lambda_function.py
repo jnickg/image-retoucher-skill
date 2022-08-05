@@ -575,6 +575,34 @@ class LowerSliderInteractivelyIntentHandler(AbstractRequestHandler):
         )
 
 
+class CompareImageIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input) -> bool:
+        return (
+            ask_utils.is_intent_name("CompareImageIntent")(handler_input)
+        )
+
+    def handle(self, handler_input):
+        context = get_context(handler_input)
+
+        new_url = context.build_image_url(comparison=True)
+        card = StandardCard(
+            title = f'Side-by-side',
+            text = f'Original (left).\nYour edits(right)',
+            image = Image(large_image_url=new_url)
+        )
+
+        speak_output = "OK, here's a comparison of your edits with the original image."
+        prompt_output = speak_output
+
+        set_context(handler_input, context)
+        return (
+            handler_input.response_builder
+               .speak(speak_output)
+               .set_card(card)
+               .ask(prompt_output)
+               .response
+        )
+
 class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
     def can_handle(self, handler_input):

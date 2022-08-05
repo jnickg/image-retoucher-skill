@@ -22,36 +22,29 @@
         {
           "name": "EditImageIntent",
           "samples": [
-            "edit",
-            "modify",
-            "retouch",
-            "touch up",
-            "edit {PhotoSlot}",
-            "modify {PhotoSlot}",
-            "retouch {PhotoSlot}",
-            "touch up {PhotoSlot}",
-            "edit a {PhotoSlot}",
-            "modify a {PhotoSlot}",
-            "retouch a {PhotoSlot}",
-            "touch up a {PhotoSlot}",
-            "let's edit a {PhotoSlot}",
-            "let's modify a {PhotoSlot}",
-            "let's retouch a {PhotoSlot}",
-            "let's touch up a {PhotoSlot}",
-            "edit {PhotoSlot} {IDSlot}",
-            "modify {PhotoSlot} {IDSlot}",
-            "retouch {PhotoSlot} {IDSlot}",
-            "touch up {PhotoSlot} {IDSlot}",
-            "let's edit {PhotoSlot} {IDSlot}",
-            "let's modify {PhotoSlot} {IDSlot}",
-            "let's retouch {PhotoSlot} {IDSlot}",
-            "let's touch up {PhotoSlot} {IDSlot}",
-            "I want to edit {PhotoSlot} {IDSlot}",
-            "I want to modify {PhotoSlot} {IDSlot}",
-            "I want to retouch {PhotoSlot} {IDSlot}",
-            "I want to touch up {PhotoSlot} {IDSlot}"
+            "{EditSlot}",
+            "{EditSlot} {PhotoSlot}",
+            "{EditSlot} a {PhotoSlot}",
+            "{EditSlot} {PhotoSlot} {IDSlot}",
+            "{StartSlot} {EditSlot} a {PhotoSlot}",
+            "{StartSlot} {EditSlot} a {PhotoSlot} {IDSlot}"
           ],
           "slots": [
+            {
+              "name": "StartSlot",
+              "type": "START_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "EditingSlot",
+              "type": "EDITING_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "EditSlot",
+              "type": "EDIT_SYNONYM",
+              "samples": []
+            },
             {
               "name": "PhotoSlot",
               "type": "PHOTO_SYNONYM",
@@ -82,18 +75,28 @@
         {
           "name": "EditSliderMetricIntent",
           "samples": [
-            "adjust {MetricSlot}",
-            "change {MetricSlot}",
-            "edit {MetricSlot}",
-            "fiddle with {MetricSlot}",
-            "improve {MetricSlot}",
-            "look at {MetricSlot}",
-            "modify {MetricSlot}",
-            "tune {MetricSlot}",
-            "tweak {MetricSlot}",
-            "update {MetricSlot}"
+            "{EditSlot} {MetricSlot}",
+            "{EditSlot} the {MetricSlot}",
+            "{StartSlot} {EditSlot} the {MetricSlot}",
+            "{StartSlot} {EditingSlot} {MetricSlot}"
+
           ],
           "slots": [
+            {
+              "name": "StartSlot",
+              "type": "START_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "EditingSlot",
+              "type": "EDITING_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "EditSlot",
+              "type": "EDIT_SYNONYM",
+              "samples": []
+            },
             {
               "name": "MetricSlot",
               "type": "SLIDER_METRIC_NAME",
@@ -104,13 +107,17 @@
         {
           "name": "SetSliderMetricIntent",
           "samples": [
-            "set {MetricSlot} to {MetricValueSlot}",
-            "change {MetricSlot} to {MetricValueSlot}",
-            "assign {MetricSlot} to {MetricValueSlot}",
-            "make {MetricSlot} {MetricValueSlot}",
-            "update {MetricSlot} to {MetricValueSlot}"
+            "{SetSlot} {MetricSlot}",
+            "{SetSlot} {MetricSlot} to something else",
+            "{SetSlot} {MetricSlot} to a new value",
+            "{SetSlot} {MetricSlot} to {MetricValueSlot}"
           ],
           "slots": [
+            {
+              "name": "SetSlot",
+              "type": "SET_SYNONYM",
+              "samples": []
+            },
             {
               "name": "MetricSlot",
               "type": "SLIDER_METRIC_NAME",
@@ -118,7 +125,23 @@
             },
             {
               "name": "MetricValueSlot",
-              "type": "AMAZON.NUMBER"
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.MetricValueSlot.Please"
+              },
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.MetricValueSlot.Range",
+                  "value": -100
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 100
+                }
+              ]
             }
           ]
         },
@@ -206,42 +229,58 @@
         {
           "name": "UndoChangesIntent",
           "samples": [
-            "cancel change",
-            "cancel edit",
-            "cancel adjustment",
-            "revert changes",
-            "revert edits",
-            "revert adjustments",
-            "undo changes",
-            "undo edits",
-            "undo adjustments",
-            "cancel last change",
-            "cancel last edit",
-            "cancel last adjustment",
-            "revert last changes",
-            "revert last edits",
-            "revert last adjustments",
-            "undo last changes",
-            "undo last edits",
-            "undo last adjustments"
+            "{UndoSlot}",
+            "{UndoSlot} {EditSlot}",
+            "{UndoSlot} {ChangesSlot}",
+            "{UndoSlot} my {EditSlot}",
+            "{UndoSlot} my {ChangesSlot}",
+            "{UndoSlot} last {EditSlot}",
+            "{UndoSlot} last {ChangesSlot}",
+            "{UndoSlot} previous {EditSlot}",
+            "{UndoSlot} previous {ChangesSlot}"
+          ],
+          "slots": [
+            {
+              "name": "UndoSlot",
+              "type": "UNDO_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "EditSlot",
+              "type": "EDIT_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "ChangesSlot",
+              "type": "CHANGES_SYNONYM",
+              "samples": []
+            }
           ]
         },
         {
           "name": "SaveImageIntent",
           "samples": [
-            "save",
-            "finalize changes",
-            "commit changes",
-            "back-up changes",
-            "latch changes",
-            "store changes",
-            "save changes",
-            "finalize image",
-            "commit image",
-            "back-up image",
-            "latch image",
-            "store image",
-            "save image"
+            "{SaveSlot}",
+            "{SaveSlot} {ChangesSlot}",
+            "{SaveSlot} {PhotoSlot}",
+            "{SaveSlot} {ChangesSlot} to {PhotoSlot}"
+          ],
+          "slots": [
+            {
+              "name": "PhotoSlot",
+              "type": "PHOTO_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "ChangesSlot",
+              "type": "CHANGES_SYNONYM",
+              "samples": []
+            },
+            {
+              "name": "SaveSlot",
+              "type": "SAVE_SYNONYM",
+              "samples": []
+            }
           ]
         },
         {
@@ -273,40 +312,186 @@
             "lower",
             "go down"
           ]
+        },
+        {
+          "name": "CompareImageIntent",
+          "samples": [
+            "compare to original",
+            "compare with original",
+            "how does this look compared to the original?",
+            "see this next to original",
+            "show this side by side with original",
+            "show this side by side with the original image",
+            "see both this and original",
+            "display original next to this",
+            "show original next to this"
+          ]
         }
       ],
       "types": [
         {
+          "name": "START_SYNONYM",
+          "values": [
+            {
+              "id": "start",
+              "name": {
+                "value": "start",
+                "synonyms": [
+                  "begin",
+                  "initiate",
+                  "let's",
+                  "let's start",
+                  "let's begin",
+                  "I want to",
+                  "I want to start",
+                  "I want to begin"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "UNDO_SYNONYM",
+          "values": [
+            {
+              "id": "undo",
+              "name": {
+                "value": "undo",
+                "synonyms": [
+                  "roll back",
+                  "revert",
+                  "revoke",
+                  "rescind",
+                  "take back"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "PHOTO_SYNONYM",
           "values": [
             {
+              "id": "photo",
               "name": {
-                "value": "photo"
+                "value": "photo",
+                "synonyms": [
+                  "photograph",
+                  "pic",
+                  "picture",
+                  "image",
+                  "snapshot",
+                  "shot",
+                  "snap",
+                  "portrait"
+                ]
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "EDIT_SYNONYM",
+          "values": [
             {
+              "id": "edit",
               "name": {
-                "value": "photograph"
+                "value": "edit",
+                "synonyms": [
+                  "modify",
+                  "retouch",
+                  "touch up",
+                  "change",
+                  "alter",
+                  "adjust",
+                  "revise",
+                  "redraft",
+                  "fiddle with",
+                  "tweak",
+                  "tune",
+                  "update"
+                ]
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "EDITING_SYNONYM",
+          "values": [
             {
+              "id": "editing",
               "name": {
-                "value": "pic"
+                "value": "editing",
+                "synonyms": [
+                  "modifying",
+                  "retouching",
+                  "touching up",
+                  "changing",
+                  "altering",
+                  "adjusting",
+                  "revising",
+                  "redrafting",
+                  "fiddling with",
+                  "tweaking",
+                  "tuning",
+                  "updating"
+                ]
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "SET_SYNONYM",
+          "values": [
             {
+              "id": "set",
               "name": {
-                "value": "picture"
+                "value": "set",
+                "synonyms": [
+                  "change",
+                  "assign",
+                  "make",
+                  "update"
+                ]
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "SAVE_SYNONYM",
+          "values": [
             {
+              "id": "save",
               "name": {
-                "value": "image"
+                "value": "save",
+                "synonyms": [
+                  "finalize",
+                  "commit",
+                  "latch",
+                  "keep",
+                  "store",
+                  "approve"
+                ]
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "CHANGES_SYNONYM",
+          "values": [
             {
+              "id": "changes",
               "name": {
-                "value": "snapshot"
+                "value": "changes",
+                "synonyms": [
+                  "edits",
+                  "modifications",
+                  "alterations",
+                  "adjustments",
+                  "revisions",
+                  "updates",
+                  "touch ups",
+                  "retouchings"
+                ]
               }
             }
           ]
@@ -382,6 +567,23 @@
   },
   "prompts": [
     {
+      "id": "Elicit.Slot.MetricValueSlot.Please",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "What value do you want to set it to?"
+        },
+        {
+          "type": "PlainText",
+          "value": "OK. What value sounds good?"
+        },
+        {
+          "type": "PlainText",
+          "value": "What value do you want to try?"
+        }
+      ]
+    },
+    {
       "id": "Elicit.Slot.IDSlot.Please",
       "variations": [
         {
@@ -391,6 +593,19 @@
         {
           "type": "PlainText",
           "value": "Edit which image?"
+        }
+      ]
+    },
+    {
+      "id": "Slot.Validation.MetricValueSlot.Range",
+      "variations": [
+        {
+          "type": "PlainText",
+          "value": "The sliders only go from -100 to 100."
+        },
+        {
+          "type": "PlainText",
+          "value": "Sorry. The value needs to be somewhere between -100 and 100."
         }
       ]
     },
