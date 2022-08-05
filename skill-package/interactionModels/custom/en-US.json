@@ -26,8 +26,8 @@
             "{EditSlot} {PhotoSlot}",
             "{EditSlot} a {PhotoSlot}",
             "{EditSlot} {PhotoSlot} {IDSlot}",
-            "{StartSlot} {EditSlot} a {PhotoSlot}",
-            "{StartSlot} {EditSlot} a {PhotoSlot} {IDSlot}"
+            "{StartSlot} {EditingSlot} a {PhotoSlot}",
+            "{StartSlot} {EditingSlot} a {PhotoSlot} {IDSlot}"
           ],
           "slots": [
             {
@@ -318,7 +318,7 @@
           "samples": [
             "compare to original",
             "compare with original",
-            "how does this look compared to the original?",
+            "how does this look compared to the original",
             "see this next to original",
             "show this side by side with original",
             "show this side by side with the original image",
