@@ -674,6 +674,134 @@
       ]
     }
   },
+  "dialog": {
+    "delegationStrategy": "ALWAYS",
+    "intents": [
+      {
+        "name": "EditImageIntent",
+        "confirmationRequired": false,
+        "prompts": {},
+        "slots": [
+          {
+            "name": "StartSlot",
+            "type": "START_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "EditingSlot",
+            "type": "EDITING_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "EditSlot",
+            "type": "EDIT_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "PhotoSlot",
+            "type": "PHOTO_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "IDSlot",
+            "type": "AMAZON.NUMBER",
+            "elicitationRequired": true,
+            "prompts": {
+              "elicitation": "Elicit.Slot.IDSlot.Please"
+            },
+            "validations": [
+              {
+                "type": "isGreaterThanOrEqualTo",
+                "prompt": "Slot.Validation.IDSlot.Range",
+                "value": 0
+              },
+              {
+                "type": "isLessThanOrEqualTo",
+                "prompt": "Slot.Validation.IDSlot.Range",
+                "value": 9
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "SetSliderMetricIntent",
+        "confirmationRequired": false,
+        "slots": [
+          {
+            "name": "SetSlot",
+            "type": "SET_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "MetricSlot",
+            "type": "SLIDER_METRIC_NAME",
+            "samples": []
+          },
+          {
+            "name": "MetricValueSlot",
+            "type": "AMAZON.NUMBER",
+            "elicitationRequired": true,
+            "prompts": {
+              "elicitation": "Elicit.Slot.MetricValueSlot.Please"
+            },
+            "validations": [
+              {
+                "type": "isGreaterThanOrEqualTo",
+                "prompt": "Slot.Validation.MetricValueSlot.Range",
+                "value": -100
+              },
+              {
+                "type": "isLessThanOrEqualTo",
+                "prompt": "Slot.Validation.IDSlot.Range",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "ApplyAlgorithmIntent",
+        "slots": [
+          {
+            "name": "RunSlot",
+            "type": "RUN_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "AlgoNameSlot",
+            "type": "ALGORITHM_NAME",
+            "samples": [],
+            "elicitationRequired": true,
+            "prompts": {
+              "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
+            }
+          },
+          {
+            "name": "PhotoSlot",
+            "type": "PHOTO_SYNONYM",
+            "samples": []
+          },
+          {
+            "name": "IDSlot",
+            "type": "AMAZON.NUMBER",
+            "validations": [
+              {
+                "type": "isGreaterThanOrEqualTo",
+                "prompt": "Slot.Validation.IDSlot.Range",
+                "value": 0
+              },
+              {
+                "type": "isLessThanOrEqualTo",
+                "prompt": "Slot.Validation.IDSlot.Range",
+                "value": 9
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "prompts": [
     {
       "id": "Elicit.Slot.MetricValueSlot.Please",
