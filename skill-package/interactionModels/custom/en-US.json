@@ -329,9 +329,8 @@
             "make it higher",
             "make it higher by {MetricValueSlot}",
             "make it higher by {MetricValueSlot} percent",
-            "brighter",
-            "brighter by {MetricValueSlot}",
-            "brighter by {MetricValueSlot} percent",
+            "make {MetricSlot} higher by {MetricValueSlot}",
+            "make {MetricSlot} higher by {MetricValueSlot} percent",
             "more",
             "{MetricValueSlot} more",
             "{MetricValueSlot} percent more",
@@ -355,6 +354,11 @@
           ],
           "slots": [
             {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
+              "samples": []
+            },
+            {
               "name": "MetricValueSlot",
               "type": "AMAZON.NUMBER"
             }
@@ -366,9 +370,6 @@
             "make it lower",
             "make it lower by {MetricValueSlot}",
             "make it lower by {MetricValueSlot} percent",
-            "darker",
-            "darker by {MetricValueSlot}",
-            "darker by {MetricValueSlot} percent",
             "less",
             "{MetricValueSlot} less",
             "{MetricValueSlot} percent less",
@@ -391,6 +392,11 @@
             "go down by {MetricValueSlot} percent"
           ],
           "slots": [
+            {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
+              "samples": []
+            },
             {
               "name": "MetricValueSlot",
               "type": "AMAZON.NUMBER"
@@ -491,7 +497,6 @@
                   "modify",
                   "retouch",
                   "touch up",
-                  "change",
                   "alter",
                   "adjust",
                   "revise",

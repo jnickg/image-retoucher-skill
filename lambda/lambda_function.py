@@ -125,6 +125,7 @@ ALGO_OPNAMES_MAP = {
     'sharpen': 'sharpen',
     'sharpening': 'sharpen',
     'sharp filter': 'sharpen',
+    'sharpen filter': 'sharpen',
     'sharpening filter': 'sharpen',
     'grayscale': 'gray',
     'grayscale filter': 'gray',
