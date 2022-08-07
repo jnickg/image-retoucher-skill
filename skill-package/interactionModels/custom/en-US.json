@@ -251,7 +251,7 @@
             },
             {
               "name": "ChangesSlot",
-              "type": "CHANGES_SYNONYM",
+              "type": "EDITS_SYNONYM",
               "samples": []
             }
           ]
@@ -273,7 +273,7 @@
             },
             {
               "name": "ChangesSlot",
-              "type": "CHANGES_SYNONYM",
+              "type": "EDITS_SYNONYM",
               "samples": []
             },
             {
@@ -485,7 +485,6 @@
                   "modifying",
                   "retouching",
                   "touching up",
-                  "changing",
                   "altering",
                   "adjusting",
                   "revising",
@@ -555,14 +554,13 @@
           ]
         },
         {
-          "name": "CHANGES_SYNONYM",
+          "name": "EDITS_SYNONYM",
           "values": [
             {
-              "id": "changes",
+              "id": "edits",
               "name": {
-                "value": "changes",
+                "value": "edits",
                 "synonyms": [
-                  "edits",
                   "modifications",
                   "alterations",
                   "adjustments",
