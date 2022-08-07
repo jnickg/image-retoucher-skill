@@ -747,8 +747,8 @@ class CompareImageIntentHandler(IRRequestHandler):
     def handle_inner(self, handler_input, context):
         new_url = context.build_image_url(comparison=True)
         card = StandardCard(
-            title = f'Side-by-side',
-            text = f'Original (left).\nYour edits(right)',
+            title = f'Side-by-side comparison',
+            text = f'L: Original.\nR: Edited',
             image = Image(large_image_url=new_url)
         )
 
@@ -773,9 +773,9 @@ class HelpIntentHandler(IRRequestHandler):
         if context.image_url is None:
             speak_output += "You can load a photo to edit by saying 'edit image 0.' "
         else:
-            speak_output = "You have an image to edit, so try adjusting exposure, contrast, saturation, or tint. You can also apply histogram equalization, or color transfer to use the colors from another image. "
+            speak_output = "You have an image to edit, so try adjusting exposure, contrast, saturation, or tint. You can also apply a number of algorithms to the image. Those algorithms are: histogram equalization, color transfer, sharpen filter, H.D.R., summer filter, winter filter, and sharpen filter.  "
         if context.in_interactive_edit:
-            speak_output = "You're editing a slider right now. Try saying 'higher' or 'lower' depending on how you want to change it. When you're satisfied, say 'commit changes.' If you want to stop, just say 'cancel.' "
+            speak_output = "You're editing a slider right now. Try saying 'higher' or 'lower' depending on how you want to change it. I'll adjust the value by a bit less each time, so we can dial it in. When you're satisfied, say 'commit changes.' If you want to stop, just say 'cancel.' "
         
         if len(context.operations) > 2:
             speak_output += "By the way, you've made a lot of changes to this image. You can try saying 'compare to original' to see it right next to the un-edited version."

@@ -171,64 +171,24 @@
         {
           "name": "ApplyAlgorithmIntent",
           "samples": [
-            "add algorithm",
-            "apply algorithm",
-            "run algorithm",
-            "use algorithm",
-            "add an algorithm",
-            "apply an algorithm",
-            "run an algorithm",
-            "use an algorithm",
-            "add {AlgoNameSlot}",
-            "add {AlgoNameSlot} algorithm",
-            "add {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
-            "add {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
-            "add {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
-            "add {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
-            "apply {AlgoNameSlot}",
-            "apply {AlgoNameSlot} algorithm",
-            "apply {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
-            "apply {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
-            "apply {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
-            "apply {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
-            "run {AlgoNameSlot}",
-            "run {AlgoNameSlot} algorithm",
-            "run {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
-            "run {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
-            "run {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
-            "run {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
-            "use {AlgoNameSlot}",
-            "use {AlgoNameSlot} algorithm",
-            "use {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
-            "use {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
-            "use {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
-            "use {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
-            "add algorithm to {PhotoSlot}",
-            "apply algorithm to {PhotoSlot}",
-            "run algorithm to {PhotoSlot}",
-            "use algorithm to {PhotoSlot}",
-            "add an algorithm to {PhotoSlot}",
-            "apply an algorithm to {PhotoSlot}",
-            "run an algorithm to {PhotoSlot}",
-            "use an algorithm to image",
-            "add {AlgoNameSlot} to {PhotoSlot}",
-            "apply {AlgoNameSlot} to {PhotoSlot}",
-            "run {AlgoNameSlot} to {PhotoSlot}",
-            "use {AlgoNameSlot} to {PhotoSlot}",
-            "add algorithm to my {PhotoSlot}",
-            "apply algorithm to my {PhotoSlot}",
-            "run algorithm to my {PhotoSlot}",
-            "use algorithm to my {PhotoSlot}",
-            "add an algorithm to my {PhotoSlot}",
-            "apply an algorithm to my {PhotoSlot}",
-            "run an algorithm to my {PhotoSlot}",
-            "use an algorithm to my image",
-            "add {AlgoNameSlot} to my {PhotoSlot}",
-            "apply {AlgoNameSlot} to my {PhotoSlot}",
-            "run {AlgoNameSlot} to my {PhotoSlot}",
-            "use {AlgoNameSlot} to my {PhotoSlot}"
+            "{RunSlot} {AlgoNameSlot}",
+            "{RunSlot} {AlgoNameSlot} algorithm",
+            "{RunSlot} {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
+            "{RunSlot} {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "{RunSlot} {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
+            "{RunSlot} {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
+            "{RunSlot} algorithm to {PhotoSlot}",
+            "{RunSlot} algorithm to this {PhotoSlot}",
+            "{RunSlot} algorithm on {PhotoSlot}",
+            "{RunSlot} algorithm on my {PhotoSlot}",
+            "{RunSlot} algorithm on this {PhotoSlot}"
           ],
           "slots": [
+            {
+              "name": "RunSlot",
+              "type": "RUN_SYNONYM",
+              "samples": []
+            },
             {
               "name": "AlgoNameSlot",
               "type": "ALGORITHM_NAME",
@@ -413,6 +373,7 @@
             "compare with original",
             "how does this look compared to the original",
             "see this next to original",
+            "show comparison",
             "show this side by side with original",
             "show this side by side with the original image",
             "see both this and original",
@@ -533,6 +494,25 @@
                   "tweaking",
                   "tuning",
                   "updating"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "RUN_SYNONYM",
+          "values": [
+            {
+              "id": "run",
+              "name": {
+                "value": "run",
+                "synonyms": [
+                  "apply",
+                  "apply an",
+                  "use",
+                  "use an",
+                  "add",
+                  "add an"
                 ]
               }
             }
