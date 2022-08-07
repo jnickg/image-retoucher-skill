@@ -563,8 +563,7 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
 
         algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
-            raise IRError("Please specify which image ID you want to use with color transfer",
-                          prompt="Try saying 'apply color transfer using image 0' or another ID you see here.",
+            raise IRError("Whoops. Please specify which image ID you want to use with color transfer. Try saying 'apply color transfer using image 0' or another ID you see here. ",
                           card_message="Try saying 'apply color transfer using image 0'", 
                           show_collage=True)
 
