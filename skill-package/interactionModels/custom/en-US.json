@@ -2,11 +2,6 @@
   "interactionModel": {
     "languageModel": {
       "invocationName": "image retoucher experiment",
-      "modelConfiguration": {
-        "fallbackIntentSensitivity": {
-          "level": "LOW"
-        }
-      },
       "intents": [
         {
           "name": "AMAZON.NavigateHomeIntent",
@@ -688,26 +683,6 @@
         "prompts": {},
         "slots": [
           {
-            "name": "StartSlot",
-            "type": "START_SYNONYM",
-            "samples": []
-          },
-          {
-            "name": "EditingSlot",
-            "type": "EDITING_SYNONYM",
-            "samples": []
-          },
-          {
-            "name": "EditSlot",
-            "type": "EDIT_SYNONYM",
-            "samples": []
-          },
-          {
-            "name": "PhotoSlot",
-            "type": "PHOTO_SYNONYM",
-            "samples": []
-          },
-          {
             "name": "IDSlot",
             "type": "AMAZON.NUMBER",
             "elicitationRequired": true,
@@ -734,16 +709,6 @@
         "confirmationRequired": false,
         "slots": [
           {
-            "name": "SetSlot",
-            "type": "SET_SYNONYM",
-            "samples": []
-          },
-          {
-            "name": "MetricSlot",
-            "type": "SLIDER_METRIC_NAME",
-            "samples": []
-          },
-          {
             "name": "MetricValueSlot",
             "type": "AMAZON.NUMBER",
             "elicitationRequired": true,
@@ -769,23 +734,12 @@
         "name": "ApplyAlgorithmIntent",
         "slots": [
           {
-            "name": "RunSlot",
-            "type": "RUN_SYNONYM",
-            "samples": []
-          },
-          {
             "name": "AlgoNameSlot",
             "type": "ALGORITHM_NAME",
-            "samples": [],
             "elicitationRequired": true,
             "prompts": {
               "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
             }
-          },
-          {
-            "name": "PhotoSlot",
-            "type": "PHOTO_SYNONYM",
-            "samples": []
           },
           {
             "name": "IDSlot",
