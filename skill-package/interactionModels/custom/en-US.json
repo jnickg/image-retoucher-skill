@@ -650,6 +650,41 @@
                   "pizer"
                 ]
               }
+            },
+            {
+              "id": "hdr",
+              "name": {
+                "value": "hdr",
+                "synonyms": [
+                  "high dynamic range",
+                  "hdr",
+                  "hdr filter"
+                ]
+              }
+            },
+            {
+              "id": "sharpen",
+              "name": {
+                "value": "sharpen",
+                "synonyms": [
+                  "sharpening",
+                  "sharp filter",
+                  "sharpen filter",
+                  "sharpening filter"
+                ]
+              }
+            },
+            {
+              "id": "gray",
+              "name": {
+                "value": "gray",
+                "synonyms": [
+                  "grayscale",
+                  "color2gray",
+                  "color to gray",
+                  "grayscale filter"
+                ]
+              }
             }
           ]
         }
@@ -718,23 +753,19 @@
       "variations": [
         {
           "type": "PlainText",
-          "value": "Which algorithm do you want to run? The options are \"Color Transfer\" and \"Histogram Equalization\""
+          "value": "Which algorithm do you want to run? The options are \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", and \"Winter Filter\""
         },
         {
           "type": "PlainText",
-          "value": "Which algorithm do you want to run: \"Color Transfer\" or \"Histogram Equalization\"?"
+          "value": "Which algorithm do you want to run: \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
         },
         {
           "type": "PlainText",
-          "value": "Which algorithm do you want to run: \"C.L.A.H.E.\" or \"Histogram Equalization\"?"
+          "value": "Which algorithm do you want to run: \"C.L.A.H.E.\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
         },
         {
           "type": "PlainText",
-          "value": "Histogram equalization or Color Transfer?"
-        },
-        {
-          "type": "PlainText",
-          "value": "C.L.A.H.E. or Color Transfer?"
+          "value": "Histogram equalization, Color Transfer, \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
         }
       ]
     }

@@ -65,7 +65,9 @@ class IRError(Exception):
 
         speak_output = self.message
         if 'say_metric_help' in self.kwargs and self.kwargs['say_metric_help']:
-            speak_output += '(By the way, valid metric values are: exposure, contrast, tint, and saturation.)'
+            speak_output += '(By the way, valid metric values are: exposure, contrast, tint, and saturation.) '
+        if 'say_algorithn_help' in self.kwargs and self.kwargs['say_algorithn_help']:
+            speak_output += '(Also, valid algorithms are histogram equalization, color transfer, H.D.R., sharpen filter, summer filter, winter filter, and grayscale filter.) '
         prompt_output = speak_output
         card = None
         if 'prompt' in self.kwargs:
@@ -103,9 +105,6 @@ METRIC_OPNAMES_MAP = {
     'hue': 'tint'
 }
 
-ALGO_NAME_CLAHE = 'histogram equalization'
-ALGO_NAME_CLRXFR = 'color transfer'
-
 ALGO_OPNAMES_MAP = {
     'contrast limited adaptive histogram equalization': 'clahe',
     'histogram equalization': 'clahe',
@@ -114,12 +113,33 @@ ALGO_OPNAMES_MAP = {
     'color transfer': 'colorxfer',
     'reinhard': 'colorxfer',
     'tone transfer': 'colorxfer',
-    'tone mapping': 'colorxfer'
+    'tone mapping': 'colorxfer',
+    'warm filter': 'summer',
+    'summer filter': 'summer',
+    'summer': 'summer',
+    'cool filter': 'winter',
+    'winter filter': 'winter',
+    'winter': 'winter',
+    'high dynamic range': 'hdr',
+    'hdr': 'hdr',
+    'sharpen': 'sharpen',
+    'sharpening': 'sharpen',
+    'sharp filter': 'sharpen',
+    'sharpening filter': 'sharpen',
+    'grayscale': 'gray',
+    'grayscale filter': 'gray',
+    'gray': 'gray',
+    'color2gray': 'gray',
+    'color to gray': 'gray'
 }
 
 OPNAME_TO_FRIENDLY_MAP = {
     'clahe': 'histogram equalization',
-    'colorxfer': 'color transfer'
+    'colorxfer': 'color transfer',
+    'hdr': 'h.d.r',
+    'gray': 'grayscale filter',
+    'winter': 'winter filter',
+    'summer': 'summer filter',
 }
 
 END_INTERACTIVE_HELP = "When you're satisfied, go ahead and say 'save edits' or 'commit changes.' "
@@ -235,7 +255,7 @@ class SessionContext:
         Adds a new operation to the context's operation stack, to apply to the currently-edited image.
         """
         if opname not in set(METRIC_OPNAMES_MAP.values()) and opname not in set(ALGO_OPNAMES_MAP.values()):
-            raise IRError(f"Sorry, I don't recognize {opname}. You can apply color transfer, apply histogram equalization, or you can set or adjust a metric.", say_metric_help=True)
+            raise IRError(f"Sorry, I don't recognize {opname}. You can apply an algorithm, or you can set or adjust a metric.", say_metric_help=True, say_algorithn_help = True)
         
         latest_op = OperationDescriptor(op=opname, val=opval)
 
@@ -551,6 +571,9 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
+        if (algo_op == 'nop'):
+            raise IRError("Sorry, I don't know that algorithm. ", say_algorithn_help=True)
+
         context.add_operation(str(algo_op), int(param))
         new_url = context.build_image_url()
         speak_output = f"Alright, applying {algo_name} to the image."
