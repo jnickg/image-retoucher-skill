@@ -325,27 +325,6 @@ class SessionContext:
         )
         return card
 
-ATTR_TIME_SLOT = "TimeSlot"
-ATTR_SESSION_IMAGE = "SessionImage"
-
-def get_context(handler_input:HandlerInput) -> SessionContext:
-    cxt_json = handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
-    cxt = SessionContext(**json.loads(cxt_json))
-    ops = []
-    for o in cxt.operations:
-        ops.append(OperationDescriptor(**o))
-    cxt.operations = ops
-
-    logger.info(f'Deserializing context: {cxt_json} -> {cxt}')
-    return cxt
-
-def set_context(handler_input:HandlerInput, cxt:SessionContext):
-    cxt_json = json.dumps(asdict(cxt))
-    logger.info(f'Serializing context: {cxt} -> {cxt_json}')
-    handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = cxt_json
-
-def initialize_handler_attributes(handler_input:HandlerInput) -> None:
-    set_context(handler_input, SessionContext())
 
 def is_url_valid(url):
     logger.info(f'Testing validity of URL {url}')
@@ -363,7 +342,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
         prompt_output = "What would you like to do?"
 
         logger.info('Initializing handler attributes')
-        initialize_handler_attributes(handler_input)
+        IRRequestHandler.set_context(handler_input, SessionContext())
         logger.info('Sending response...')
 
         card = StandardCard(
@@ -378,27 +357,46 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
 
 class IRRequestHandler(AbstractRequestHandler):
+    @staticmethod
+    def get_context(handler_input:HandlerInput) -> SessionContext:
+        cxt_json = handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT]
+        cxt = SessionContext(**json.loads(cxt_json))
+        ops = []
+        for o in cxt.operations:
+            ops.append(OperationDescriptor(**o))
+        cxt.operations = ops
+
+        logger.info(f'Deserializing context: {cxt_json} -> {cxt}')
+        return cxt
+
+    @staticmethod
+    def set_context(handler_input:HandlerInput, cxt:SessionContext):
+        cxt_json = json.dumps(asdict(cxt))
+        logger.info(f'Serializing context: {cxt} -> {cxt_json}')
+        handler_input.attributes_manager.session_attributes[ATTR_SESSION_CONTEXT] = cxt_json
+
+
     @abstractmethod
     def can_handle_inner(self, handler_input: HandlerInput, context: SessionContext) -> bool:
         pass
     def can_handle(self, handler_input: HandlerInput) -> bool:
-        context = get_context(handler_input)
+        context = IRRequestHandler.get_context(handler_input)
         try:
             can_handle = self.can_handle_inner(handler_input, context)
             return can_handle
         finally:
-            set_context(handler_input, context)
+            IRRequestHandler.set_context(handler_input, context)
 
     @abstractmethod
     def handle_inner(self, handler_input: HandlerInput, context: SessionContext) -> Response:
         pass
     def handle(self, handler_input: HandlerInput) -> Response:
-        context = get_context(handler_input)
+        context = IRRequestHandler.get_context(handler_input)
         try:
             response = self.handle_inner(handler_input, context)
             return response
         finally:
-            set_context(handler_input, context)
+            IRRequestHandler.set_context(handler_input, context)
 
 class EditImageIntentHandler(IRRequestHandler):
     """Handler for Edit Image Intent."""
@@ -660,7 +658,8 @@ class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
+            raise IRError("Sorry, I can't do that yet. Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value.")
+            # return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
         if context.interactive_edit_last_adjustment_dir == 'up':
@@ -702,7 +701,8 @@ class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
+            raise IRError("Sorry, I can't do that yet. Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value.")
+            # return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
         if context.interactive_edit_last_adjustment_dir == 'down':
