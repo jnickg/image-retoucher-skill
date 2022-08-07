@@ -117,6 +117,13 @@ ALGO_OPNAMES_MAP = {
     'tone mapping': 'colorxfer'
 }
 
+OPNAME_TO_FRIENDLY_MAP = {
+    'clahe': 'histogram equalization',
+    'colorxfer': 'color transfer'
+}
+
+END_INTERACTIVE_HELP = "When you're satisfied, go ahead and say 'save edits' or 'commit changes.' "
+
 def is_algo_name_val_colorxfer(algo_name: str) -> bool:
     return ALGO_OPNAMES_MAP.get(algo_name, 'nop') == 'colorxfer'
 
@@ -157,7 +164,7 @@ class SessionContext:
     The base URL of the iamge currently being edited. Used to build URLs with operations
     """
 
-    really_change : bool = False
+    confirmed_change_image : bool = False
     """
     Confirmation flag for changing the currently-edited image
     """
@@ -199,6 +206,11 @@ class SessionContext:
     The direction of the last adjustment. 'none' means the editing session just started.
     """
 
+    interactive_edit_fine_tuning_prompt_done : bool = False
+    """
+    Whether the last change(s) were minor enough that Alexa already prompted the user about how to finish.
+    """
+
     operations : List[OperationDescriptor] = field(default_factory=list)
     """
     A list (treated like a stack) of operations being run on the base image
@@ -224,13 +236,17 @@ class SessionContext:
         """
         if opname not in set(METRIC_OPNAMES_MAP.values()) and opname not in set(ALGO_OPNAMES_MAP.values()):
             raise IRError(f"Sorry, I don't recognize {opname}. You can apply color transfer, apply histogram equalization, or you can set or adjust a metric.", say_metric_help=True)
-        updated = False
-        for op in self.operations:
-            if op.op == opname:
-                op.val = opval
-                updated = True
-        if not updated: self.operations.append(OperationDescriptor(op=opname, val=opval))
-        logger.info(f'Updated context: {self}')
+        
+        latest_op = OperationDescriptor(op=opname, val=opval)
+
+        existing_opnames = [op.op for op in self.operations]
+        if opname in existing_opnames:
+            existing_op_idx = existing_opnames.index(opname)
+            existing_op = self.operations.pop(existing_op_idx)
+            logger.info(f'Updating {existing_op} to {latest_op}')
+
+        self.operations.append(latest_op)
+        logger.info(f"Latest operation: {latest_op}")
 
     def enter_interactive_mode(self, metric:str):
         """
@@ -244,6 +260,7 @@ class SessionContext:
         self.interactive_edit_metric = metric
         self.interactive_edit_last_adjustment = 0
         self.interactive_edit_last_adjustment_dir = 'none'
+        self.interactive_edit_fine_tuning_prompt_done = False
         self.interactive_edit_last_val = 0
         self.interactive_edit_first_val = 0
         existing_opnames = [op.op for op in self.operations]
@@ -270,6 +287,7 @@ class SessionContext:
         self.interactive_edit_last_val = 0
         self.interactive_edit_last_adjustment = 0
         self.interactive_edit_last_adjustment_dir = 'none'
+        self.interactive_edit_fine_tuning_prompt_done = False
         self.in_interactive_edit = False
 
     def build_interactive_card(self):
@@ -340,9 +358,20 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
 class IRRequestHandler(AbstractRequestHandler):
     @abstractmethod
-    def handle_inner(self, handler_input, context) -> Response:
+    def can_handle_inner(self, handler_input: HandlerInput, context: SessionContext) -> bool:
         pass
-    def handle(self, handler_input) -> Response:
+    def can_handle(self, handler_input: HandlerInput) -> bool:
+        context = get_context(handler_input)
+        try:
+            can_handle = self.can_handle_inner(handler_input, context)
+            return can_handle
+        finally:
+            set_context(handler_input, context)
+
+    @abstractmethod
+    def handle_inner(self, handler_input: HandlerInput, context: SessionContext) -> Response:
+        pass
+    def handle(self, handler_input: HandlerInput) -> Response:
         context = get_context(handler_input)
         try:
             response = self.handle_inner(handler_input, context)
@@ -352,8 +381,7 @@ class IRRequestHandler(AbstractRequestHandler):
 
 class EditImageIntentHandler(IRRequestHandler):
     """Handler for Edit Image Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("EditImageIntent")(handler_input)
 
     def _update_context_and_return_outputs(self, context: SessionContext, image_id: any):
@@ -385,17 +413,16 @@ class EditImageIntentHandler(IRRequestHandler):
         slots = handler_input.request_envelope.request.intent.slots
         image_id = slots[SLOT_ID].value
 
-        if (context.image_id is None or context.image_url is None) or (len(context.operations) == 0) or context.really_change:
+        if (context.image_id is None and context.image_url is None) or (len(context.operations) == 0) or context.confirmed_change_image:
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
             context.operations.clear()
-            context.really_change = False
+            context.confirmed_change_image = False
         elif context.in_interactive_edit:
             raise IRError("You're currently interactively editing a slider. To edit a new image, first say 'cancel'")
         else:
+            context.confirmed_change_image = True
             speak_output = "It looks like you're already editing an image.\r\nIf you really want to edit a new photo, just confirm by asking again."
             prompt_output = speak_output
-            context.really_change = True
-            card = SimpleCard(title="Confirm", content="Really edit a new photo?")
 
         return (
             handler_input.response_builder
@@ -408,8 +435,7 @@ class EditImageIntentHandler(IRRequestHandler):
 
 class EditSliderMetricIntentHandler(IRRequestHandler):
     """Handler for Edit Slider Metric Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("EditSliderMetricIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
@@ -423,11 +449,9 @@ class EditSliderMetricIntentHandler(IRRequestHandler):
             prompt_output = "Just say \"higher\" or \"lower\" and I'll adjust the slider a bit less each time. You can say \"done\" when you're satisfied, or \"cancel.\""
             card = context.build_interactive_card()
         elif context.in_interactive_edit:
-            raise IRError("You're currently interactively editing a slider. To interactively edit another slider, first say 'cancel'")
+            raise IRError("You're already interactively editing a slider. To interactively edit another slider, first say 'cancel'")
         else:
-            speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit a photo from today\" or another time"
-            prompt_output = speak_output
-            card = SimpleCard(title="Error", content="No loaded image in current session.")
+            raise IRError("Hmm... You probably meant to edit an image, but I'm just an A.I. and I misunderstood. Try saying \"edit photo 3\" or any zero to nine value, to load an image.", show_collage=True)
 
         return (
             handler_input.response_builder
@@ -439,10 +463,11 @@ class EditSliderMetricIntentHandler(IRRequestHandler):
 
 
 class SetSliderMetricIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("SetSliderMetricIntent")(handler_input)
 
-    def handle_inner(self, handler_input, context):
+    @staticmethod
+    def set_slider_metric(handler_input: HandlerInput, context: SessionContext) -> Response:
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
@@ -451,10 +476,37 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
 
         if value < -100 or value > 100:
-            raise IRError(f"Sorry, but I don't know how to apply a value of {value}. Try using a range of negative one hundred to positive one hundred, where zero means 'no change.'")
+            raise IRError(f"Sorry, but I don't know how to apply a value of {value}. Try using a range of negative one hundred to positive one hundred, where zero means 'unchanged from original.'")
+        if context.image_url is None:
+            raise IRError("Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time", show_collage=True)
 
+        if context.in_interactive_edit:
+            context.interactive_edit_last_adjustment = abs(value - context.interactive_edit_last_val)
+            context.interactive_edit_last_adjustment_dir = (
+                'down' if value < context.interactive_edit_last_val else
+                'up' if value > context.interactive_edit_last_val else
+                'none'
+            )
+            context.interactive_edit_last_val = value
+            if context.interactive_edit_last_adjustment_dir != 'none':
+                speak_output = f'OK, moving {context.interactive_edit_metric} {context.interactive_edit_last_adjustment_dir }. '
+            else:
+                speak_output = f"OK, setting {context.interactive_edit_metric}. "
 
-        if (context.image_url is not None):
+            if context.interactive_edit_last_val >= 100:
+                context.interactive_edit_last_val = 100
+                speak_output += "This is as high as it can go. "
+            if context.interactive_edit_last_val <= -100:
+                context.interactive_edit_last_val = -100
+                speak_output += "This is as low as it can go. "
+
+            if context.interactive_edit_last_adjustment < 10 and not context.interactive_edit_fine_tuning_prompt_done:
+                speak_output += f"Looks like you're fine tuning now. {END_INTERACTIVE_HELP}"
+                context.interactive_edit_fine_tuning_prompt_done = True
+
+            prompt_output = speak_output
+            card = context.build_interactive_card()
+        else:
             speak_output = f"Alright, setting {metric} to {value}."
             prompt_output = speak_output
             context.add_operation(str(metric), int(value))
@@ -464,12 +516,6 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
                 text = f'{metric_repeat} is now {value}',
                 image = Image(large_image_url=new_url)
             )
-        elif context.in_interactive_edit:
-            raise IRError("You're currently interactively editing a slider. To simply set a slider, first say 'cancel'")
-        else:
-            speak_output = "Sorry, I don't have a loded image in this session. Try saying \"edit photo 0\" or another time"
-            prompt_output = speak_output
-            card = SimpleCard(title="Error", content="No loaded image in current session.")
 
         return (
             handler_input.response_builder
@@ -479,8 +525,11 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
                 .response
         )
 
+    def handle_inner(self, handler_input, context):
+        return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
+
 class ApplyAlgorithmIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("ApplyAlgorithmIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
@@ -495,8 +544,10 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
 
         algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
-            # TODO show collage card and prompt for image ID instead of raising error
-            raise IRError("Please specify which image ID you want to use with color transfer", show_collage=True, card_message="Try saying 'apply color transfer using image 0'", prompt="Try saying 'apply color transfer using image 0' or another ID you see here.")
+            raise IRError("Please specify which image ID you want to use with color transfer",
+                          prompt="Try saying 'apply color transfer using image 0' or another ID you see here.",
+                          card_message="Try saying 'apply color transfer using image 0'", 
+                          show_collage=True)
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')
@@ -519,22 +570,22 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
         )
 
 class UndoChangesIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("UndoChangesIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
         if (context.image_url is None):
-            raise IRError("Sorry, I don't have a loded image in this session", show_collage=True, prompt="Try saying 'edit photo 0' or another ID you see here.")
+            raise IRError(message="Sorry, I don't have a loded image in this session",
+                          prompt="Try saying 'edit photo 0' or another ID you see here.",
+                          show_collage=True)
         if context.in_interactive_edit:
-            raise IRError("Right now I don't support undo during interactive edits. If you don't like this interactive edit, just cancel and try again. If you don't want to do it interactively, you can also just say 'set exposure to 37'")
+            raise IRError("Right now I don't support undo during interactive edits. If you don't like the changes right now, just cancel and try again. If you don't want to do it interactively, you can also just say 'set exposure to 37'")
         if (len(context.operations) == 0):
-            raise IRError("Hmm, there's nothing to undo", prompt="Try saying 'set brightness to 25'")
+            raise IRError("Hmm, there's nothing to undo. Try changing a metric, or applying an algorithm first. ", say_metric_help=True)
 
-        # TODO This is broken because if user sets exposure:50, tint:50, exposure:25, and then does
-        # "undo", tint will be reverted. Context needs a list of ALL operations, as well as one for
-        # building the URL. Or a function that takes just collapses them
         op = context.operations.pop()
-        speak_output = f'OK, reverting the last change, which was {op.op}'
+        last_opname = OPNAME_TO_FRIENDLY_MAP.get(op.op, op.op)
+        speak_output = f'OK, reverting the last change, which was {last_opname}. '
         new_url = context.build_image_url()
         card = StandardCard(
             title = f'Updated Photo {context.image_id}',
@@ -551,7 +602,7 @@ class UndoChangesIntentHandler(IRRequestHandler):
         )
 
 class SaveImageIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("SaveImageIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
@@ -570,7 +621,7 @@ class SaveImageIntentHandler(IRRequestHandler):
                 image = Image(large_image_url=new_url)
             )
         elif context.image_url is not None:
-            raise IRError(f"I don't yet support saving images to a database, sorry.")
+            raise IRError(f"I don't yet support saving images to a device or database. Sorry about that. That said, I'm glad you are satisfied with your edited image! ")
 
         handler_input.response_builder.speak(speak_output)
         handler_input.response_builder.ask(prompt_output)
@@ -580,15 +631,12 @@ class SaveImageIntentHandler(IRRequestHandler):
 
 
 class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
-        return (
-            ask_utils.is_intent_name("RaiseSliderInteractivelyIntent")(handler_input)
-            and get_context(handler_input).in_interactive_edit
-        )
+    def can_handle_inner(self, handler_input, context):
+        return ask_utils.is_intent_name("RaiseSliderInteractivelyIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
+            return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
         if context.interactive_edit_last_adjustment_dir == 'up':
@@ -608,8 +656,9 @@ class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
             context.interactive_edit_last_val = 100
             speak_output += "This is as high as it can go. "
 
-        if adjust_amount < 10:
-            speak_output += "Looks like we're dialing it in."
+        if adjust_amount < 10 and not context.interactive_edit_fine_tuning_prompt_done:
+            speak_output += f"Looks like we're dialing it in. {END_INTERACTIVE_HELP}"
+            context.interactive_edit_fine_tuning_prompt_done = True
 
         prompt_output = f"How's it look? "
         card = context.build_interactive_card()
@@ -624,15 +673,12 @@ class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
 
 
 class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
-        return (
-            ask_utils.is_intent_name("LowerSliderInteractivelyIntent")(handler_input)
-            and get_context(handler_input).in_interactive_edit
-        )
+    def can_handle_inner(self, handler_input, context):
+        return ask_utils.is_intent_name("LowerSliderInteractivelyIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            raise IRError("I'm not editing a slider right now. To edit a slider, say 'adjust contrast'", say_metric_help=True)
+            return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
         if context.interactive_edit_last_adjustment_dir == 'down':
@@ -652,8 +698,9 @@ class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
             context.interactive_edit_last_val = -100
             speak_output += "This is as low as it can go. "
 
-        if adjust_amount < 10:
-            speak_output += "Looks like we're dialing it in."
+        if adjust_amount < 10 and not context.interactive_edit_fine_tuning_prompt_done:
+            speak_output += f"Looks like we're dialing it in. {END_INTERACTIVE_HELP}"
+            context.interactive_edit_fine_tuning_prompt_done = True
 
         prompt_output = f"How's it look? "
         card = context.build_interactive_card()
@@ -668,7 +715,7 @@ class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
 
 
 class CompareImageIntentHandler(IRRequestHandler):
-    def can_handle(self, handler_input) -> bool:
+    def can_handle_inner(self, handler_input, context):
         return (
             ask_utils.is_intent_name("CompareImageIntent")(handler_input)
         )
@@ -694,8 +741,7 @@ class CompareImageIntentHandler(IRRequestHandler):
 
 class HelpIntentHandler(IRRequestHandler):
     """Handler for Help Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
 
     def handle_inner(self, handler_input, context:SessionContext):
@@ -720,8 +766,7 @@ class HelpIntentHandler(IRRequestHandler):
 
 class CancelOrStopIntentHandler(IRRequestHandler):
     """Single handler for Cancel and Stop Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
+    def can_handle_inner(self, handler_input, context):
         return (ask_utils.is_intent_name("AMAZON.CancelIntent")(handler_input) or
                 ask_utils.is_intent_name("AMAZON.StopIntent")(handler_input))
 
@@ -751,8 +796,7 @@ class CancelOrStopIntentHandler(IRRequestHandler):
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
+    def can_handle_inner(self, handler_input, context):
         return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):

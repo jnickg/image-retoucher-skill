@@ -22,7 +22,9 @@
         {
           "name": "EditImageIntent",
           "samples": [
+            "{StartSlot}",
             "{EditSlot}",
+            "{StartSlot} {EditingSlot}",
             "{EditSlot} {PhotoSlot}",
             "{EditSlot} a {PhotoSlot}",
             "{EditSlot} {PhotoSlot} {IDSlot}",
@@ -76,9 +78,21 @@
           "name": "EditSliderMetricIntent",
           "samples": [
             "{EditSlot} {MetricSlot}",
+            "{EditSlot} {MetricSlot} slider",
+            "{EditSlot} {MetricSlot} value",            
+            "{EditSlot} {MetricSlot} metric",
             "{EditSlot} the {MetricSlot}",
+            "{EditSlot} the {MetricSlot} slider",
+            "{EditSlot} the {MetricSlot} value",
+            "{EditSlot} the {MetricSlot} metric",
             "{StartSlot} {EditSlot} the {MetricSlot}",
-            "{StartSlot} {EditingSlot} {MetricSlot}"
+            "{StartSlot} {EditSlot} the {MetricSlot} slider",
+            "{StartSlot} {EditSlot} the {MetricSlot} value",
+            "{StartSlot} {EditSlot} the {MetricSlot} metric",
+            "{StartSlot} {EditingSlot} {MetricSlot}",
+            "{StartSlot} {EditingSlot} {MetricSlot} slider",
+            "{StartSlot} {EditingSlot} {MetricSlot} value",
+            "{StartSlot} {EditingSlot} {MetricSlot} metric"
 
           ],
           "slots": [
@@ -109,8 +123,17 @@
           "samples": [
             "{SetSlot} {MetricSlot}",
             "{SetSlot} {MetricSlot} to something else",
+            "{SetSlot} {MetricSlot} slider",
+            "{SetSlot} {MetricSlot} metric",
+            "{SetSlot} {MetricSlot} value",
+            "{SetSlot} the {MetricSlot}",
+            "{SetSlot} the {MetricSlot} slider",
+            "{SetSlot} the {MetricSlot} metric",
+            "{SetSlot} the {MetricSlot} value",
+            "{SetSlot} {MetricSlot} to something else",
             "{SetSlot} {MetricSlot} to a new value",
-            "{SetSlot} {MetricSlot} to {MetricValueSlot}"
+            "{SetSlot} {MetricSlot} to {MetricValueSlot}",
+            "{SetSlot} {MetricSlot} to {MetricValueSlot} percent"
           ],
           "slots": [
             {
@@ -157,17 +180,29 @@
             "run an algorithm",
             "use an algorithm",
             "add {AlgoNameSlot}",
+            "add {AlgoNameSlot} algorithm",
             "add {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
             "add {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "add {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
+            "add {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
             "apply {AlgoNameSlot}",
+            "apply {AlgoNameSlot} algorithm",
             "apply {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
             "apply {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "apply {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
+            "apply {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
             "run {AlgoNameSlot}",
+            "run {AlgoNameSlot} algorithm",
             "run {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
             "run {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "run {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
+            "run {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
             "use {AlgoNameSlot}",
+            "use {AlgoNameSlot} algorithm",
             "use {AlgoNameSlot} using {PhotoSlot} {IDSlot}",
             "use {AlgoNameSlot} with {PhotoSlot} {IDSlot}",
+            "use {AlgoNameSlot} algorithm using {PhotoSlot} {IDSlot}",
+            "use {AlgoNameSlot} algorithm with {PhotoSlot} {IDSlot}",
             "add algorithm to {PhotoSlot}",
             "apply algorithm to {PhotoSlot}",
             "run algorithm to {PhotoSlot}",
@@ -236,8 +271,12 @@
             "{UndoSlot} my {ChangesSlot}",
             "{UndoSlot} last {EditSlot}",
             "{UndoSlot} last {ChangesSlot}",
+            "{UndoSlot} the last {EditSlot}",
+            "{UndoSlot} the last {ChangesSlot}",
             "{UndoSlot} previous {EditSlot}",
-            "{UndoSlot} previous {ChangesSlot}"
+            "{UndoSlot} previous {ChangesSlot}",
+            "actually I don't like that",
+            "actually {UndoSlot}"
           ],
           "slots": [
             {
@@ -263,7 +302,8 @@
             "{SaveSlot}",
             "{SaveSlot} {ChangesSlot}",
             "{SaveSlot} {PhotoSlot}",
-            "{SaveSlot} {ChangesSlot} to {PhotoSlot}"
+            "{SaveSlot} {ChangesSlot} to {PhotoSlot}",
+            "looks good"
           ],
           "slots": [
             {
@@ -287,30 +327,74 @@
           "name": "RaiseSliderInteractivelyIntent",
           "samples": [
             "make it higher",
+            "make it higher by {MetricValueSlot}",
+            "make it higher by {MetricValueSlot} percent",
             "brighter",
+            "brighter by {MetricValueSlot}",
+            "brighter by {MetricValueSlot} percent",
             "more",
-            "right",
+            "{MetricValueSlot} more",
+            "{MetricValueSlot} percent more",
             "up",
-            "more vivid",
+            "{MetricValueSlot} up",
+            "{MetricValueSlot} percent up",
+            "up by {MetricValueSlot}",
+            "up by {MetricValueSlot} percent",
             "increase",
+            "increase by {MetricValueSlot}",
+            "increase by {MetricValueSlot} percent",
+            "adjust {MetricValueSlot} up",
+            "adjust {MetricValueSlot} percent up",
             "adjust up",
+            "adjust up by {MetricValueSlot} percent",
             "raise",
-            "go up"
+            "raise by {MetricValueSlot}",
+            "raise by {MetricValueSlot} percent",
+            "go up",
+            "go up by {MetricValueSlot} percent"
+          ],
+          "slots": [
+            {
+              "name": "MetricValueSlot",
+              "type": "AMAZON.NUMBER"
+            }
           ]
         },
         {
           "name": "LowerSliderInteractivelyIntent",
           "samples": [
             "make it lower",
+            "make it lower by {MetricValueSlot}",
+            "make it lower by {MetricValueSlot} percent",
             "darker",
+            "darker by {MetricValueSlot}",
+            "darker by {MetricValueSlot} percent",
             "less",
-            "left",
+            "{MetricValueSlot} less",
+            "{MetricValueSlot} percent less",
             "down",
-            "less vivid",
+            "{MetricValueSlot} down",
+            "{MetricValueSlot} percent down",
+            "down by {MetricValueSlot}",
+            "down by {MetricValueSlot} percent",
             "decrease",
+            "decrease by {MetricValueSlot}",
+            "decrease by {MetricValueSlot} percent",
+            "adjust {MetricValueSlot} down",
+            "adjust {MetricValueSlot} percent down",
             "adjust down",
+            "adjust down by {MetricValueSlot} percent",
             "lower",
-            "go down"
+            "lower by {MetricValueSlot}",
+            "lower by {MetricValueSlot} percent",
+            "go down",
+            "go down by {MetricValueSlot} percent"
+          ],
+          "slots": [
+            {
+              "name": "MetricValueSlot",
+              "type": "AMAZON.NUMBER"
+            }
           ]
         },
         {
@@ -324,7 +408,13 @@
             "show this side by side with the original image",
             "see both this and original",
             "display original next to this",
-            "show original next to this"
+            "show original next to this",
+            "can i see this next to the original",
+            "compare to start",
+            "compare to un-edited version",
+            "compare to raw version",
+            "compare to raw",
+            "compare with raw"
           ]
         }
       ],
@@ -337,6 +427,7 @@
               "name": {
                 "value": "start",
                 "synonyms": [
+                  "commence",
                   "begin",
                   "initiate",
                   "let's",
