@@ -447,7 +447,7 @@ class EditImageIntentHandler(IRRequestHandler):
                     .response
             )
 
-        if (context.image_id is not None or context.image_url is not None) or (len(context.operations) > 0) or not context.confirmed_change_image:
+        if (context.image_id is not None or context.image_url is not None) and (len(context.operations) > 0) and not context.confirmed_change_image:
             context.confirmed_change_image = True
             return (
                 handler_input.response_builder
