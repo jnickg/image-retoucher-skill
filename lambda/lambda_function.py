@@ -437,7 +437,7 @@ class EditImageIntentHandler(IRRequestHandler):
         if image_id is None:
             handler_input.response_builder.speak("I need to know which image to edit. ")
             handler_input.response_builder.ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
-            handler_input.response_builder.add_directive(
+            handler_input.response_builder.add_directive_to_reprompt(
                 ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
                                     slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID])
             )
