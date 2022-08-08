@@ -439,34 +439,7 @@ class EditImageIntentHandler(IRRequestHandler):
                 handler_input.response_builder
                     .speak("Code-based reprompt. I need to know which image to edit. ")
                     .ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
-                    .add_directive(ElicitSlotDirective(updated_intent=Intent(name="EditImageIntent",
-                                                                             confirmation_status=IntentConfirmationStatus.NONE,
-                                                                             slots={
-                                                                                "IDSlot": Slot(
-                                                                                    name="IDSlot",
-                                                                                    confirmation_status=SlotConfirmationStatus.NONE
-                                                                                ),
-                                                                                "StartSlot": Slot(
-                                                                                    name="StartSlot",
-                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
-                                                                                    value=None
-                                                                                ),
-                                                                                "EditingSlot": Slot(
-                                                                                    name="EditingSlot",
-                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
-                                                                                    value=None
-                                                                                ),
-                                                                                "EditSlot": Slot(
-                                                                                    name="EditSlot",
-                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
-                                                                                    value="edit"
-                                                                                ),
-                                                                                "PhotoSlot": Slot(
-                                                                                    name="PhotoSlot",
-                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
-                                                                                )
-                                                                             }),
-                                                       slot_to_elicit="IDSlot"))
+                    .add_directive(ElicitSlotDirective(slot_to_elicit="IDSlot"))
                     .set_card(StandardCard(title = 'Available Images',
                                            text = "Select image to transfer colors from",
                                            image = Image(large_image_url=str(API_COLLAGE_URL))))
