@@ -30,7 +30,7 @@ from ask_sdk_model.ui.image import Image
 from ask_sdk_model.ui.play_behavior import PlayBehavior
 from ask_sdk_model.dialog.elicit_slot_directive import ElicitSlotDirective
 
-from ask_sdk_model import Response, Slot
+from ask_sdk_model import Response, Slot, Intent, SlotConfirmationStatus, IntentConfirmationStatus
 from requests import Session, session
 
 logger = logging.getLogger(__name__)
@@ -340,7 +340,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
         return ask_utils.is_request_type("LaunchRequest")(handler_input)
 
     def handle(self, handler_input):
-        speak_output = "Welcome to Image Retoucher! You can select a photo to edit, or if your device is showing one now, you can start editing."
+        speak_output = "Welcome to Image Retoucher! You can select a photo to edit, or if your device is showing one now, you can start editing. "
         prompt_output = "What would you like to do?"
 
         logger.info('Initializing handler attributes')
@@ -439,8 +439,15 @@ class EditImageIntentHandler(IRRequestHandler):
                 handler_input.response_builder
                     .speak("Code-based reprompt. I need to know which image to edit. ")
                     .ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
-                    .add_directive_to_reprompt(ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
-                                               slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID]))
+                    .add_directive(ElicitSlotDirective(updated_intent=Intent(name="EditImageIntent",
+                                                                             confirmation_status=IntentConfirmationStatus.NONE,
+                                                                             slots={
+                                                                                "IDSlot": Slot(
+                                                                                    name="IDSlot",
+                                                                                    confirmation_status=SlotConfirmationStatus.NONE
+                                                                                )
+                                                                             }),
+                                                       slot_to_elicit="IDSlot"))
                     .set_card(StandardCard(title = 'Available Images',
                                            text = "Select image to transfer colors from",
                                            image = Image(large_image_url=str(API_COLLAGE_URL))))
