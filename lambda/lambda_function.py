@@ -28,6 +28,7 @@ from ask_sdk_model.ui.simple_card import SimpleCard
 from ask_sdk_model.ui.standard_card import StandardCard
 from ask_sdk_model.ui.image import Image
 from ask_sdk_model.ui.play_behavior import PlayBehavior
+from ask_sdk_model.dialog.elicit_slot_directive import ElicitSlotDirective
 
 from ask_sdk_model import Response, Slot
 from requests import Session, session
@@ -564,9 +565,16 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
 
         algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
-            raise IRError("Whoops. Please specify which image ID you want to use with color transfer. Try saying 'apply color transfer using image 0' or another ID you see here. ",
-                          card_message="Try saying 'apply color transfer using image 0'", 
-                          show_collage=True)
+            handler_input.response_builder.add_directive(
+                ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
+                                    slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID])
+            )
+            handler_input.response_builder.set_card(StandardCard(
+                title = 'Available Images',
+                text = "Select image to transfer colors from",
+                image = Image(large_image_url=str(API_COLLAGE_URL))
+            ))
+            return handler_input.response_builder.response
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')

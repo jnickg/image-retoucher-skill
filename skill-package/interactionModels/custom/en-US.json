@@ -1,4 +1,5 @@
 {
+  "version": "1",
   "interactionModel": {
     "languageModel": {
       "invocationName": "image retoucher experiment",
@@ -13,7 +14,13 @@
         },
         {
           "name": "AMAZON.HelpIntent",
-          "samples": []
+          "samples": [
+            "what can i do",
+            "list valid commands",
+            "list commands",
+            "what commands can i run",
+            "tell me what i can do"
+          ]
         },
         {
           "name": "AMAZON.StopIntent",
@@ -29,7 +36,7 @@
             "{EditSlot} a {PhotoSlot}",
             "{EditSlot} {PhotoSlot} {IDSlot}",
             "{StartSlot} {EditingSlot} a {PhotoSlot}",
-            "{StartSlot} {EditingSlot} a {PhotoSlot} {IDSlot}"
+            "{StartSlot} {EditingSlot} {PhotoSlot} {IDSlot}"
           ],
           "slots": [
             {
@@ -55,21 +62,11 @@
             {
               "name": "IDSlot",
               "type": "AMAZON.NUMBER",
-              "elicitationRequired": true,
-              "prompts": {
-                "elicitation": "Elicit.Slot.IDSlot.Please"
-              },
-              "validations": [
-                {
-                  "type": "isGreaterThanOrEqualTo",
-                  "prompt": "Slot.Validation.IDSlot.Range",
-                  "value": 0
-                },
-                {
-                  "type": "isLessThanOrEqualTo",
-                  "prompt": "Slot.Validation.IDSlot.Range",
-                  "value": 9
-                }
+              "samples": [
+                "{IDSlot}",
+                "{PhotoSlot} {IDSlot}",
+                "{PhotoSlot} number {IDSlot}",
+                "{StartSlot} {EditingSlot} {PhotoSlot} {IDSlot}"
               ]
             }
           ]
@@ -78,22 +75,13 @@
           "name": "EditSliderMetricIntent",
           "samples": [
             "{EditSlot} {MetricSlot}",
-            "{EditSlot} {MetricSlot} slider",
-            "{EditSlot} {MetricSlot} value",            
-            "{EditSlot} {MetricSlot} metric",
+            "{EditSlot} {MetricSlot} {SliderSynonymSlot}",
             "{EditSlot} the {MetricSlot}",
-            "{EditSlot} the {MetricSlot} slider",
-            "{EditSlot} the {MetricSlot} value",
-            "{EditSlot} the {MetricSlot} metric",
+            "{EditSlot} the {MetricSlot} {SliderSynonymSlot}",
             "{StartSlot} {EditSlot} the {MetricSlot}",
-            "{StartSlot} {EditSlot} the {MetricSlot} slider",
-            "{StartSlot} {EditSlot} the {MetricSlot} value",
-            "{StartSlot} {EditSlot} the {MetricSlot} metric",
+            "{StartSlot} {EditSlot} the {MetricSlot} {SliderSynonymSlot}",
             "{StartSlot} {EditingSlot} {MetricSlot}",
-            "{StartSlot} {EditingSlot} {MetricSlot} slider",
-            "{StartSlot} {EditingSlot} {MetricSlot} value",
-            "{StartSlot} {EditingSlot} {MetricSlot} metric"
-
+            "{StartSlot} {EditingSlot} {MetricSlot} {SliderSynonymSlot}"
           ],
           "slots": [
             {
@@ -114,6 +102,17 @@
             {
               "name": "MetricSlot",
               "type": "SLIDER_METRIC_NAME",
+              "samples": [
+                "{MetricSlot}",
+                "{MetricSlot} slider",
+                "{MetricSlot} value",
+                "{MetricSlot} metric",
+                "{EditSlot} {MetricSlot}"
+              ]
+            },
+            {
+              "name": "SliderSynonymSlot",
+              "type": "SLIDER_SYNONYM",
               "samples": []
             }
           ]
@@ -121,19 +120,26 @@
         {
           "name": "SetSliderMetricIntent",
           "samples": [
+            "{SetSlot} {SliderSynonymSlot}",
+            "{SetSlot} {SliderSynonymSlot} to something else",
+            "{SetSlot} {SliderSynonymSlot} to a new value",
+            "{SetSlot} {SliderSynonymSlot} to {MetricValueSlot}",
+            "{SetSlot} {SliderSynonymSlot} to {MetricValueSlot} percent",
             "{SetSlot} {MetricSlot}",
             "{SetSlot} {MetricSlot} to something else",
-            "{SetSlot} {MetricSlot} slider",
-            "{SetSlot} {MetricSlot} metric",
-            "{SetSlot} {MetricSlot} value",
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot}",
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot} to something else",
             "{SetSlot} the {MetricSlot}",
-            "{SetSlot} the {MetricSlot} slider",
-            "{SetSlot} the {MetricSlot} metric",
-            "{SetSlot} the {MetricSlot} value",
+            "{SetSlot} the {MetricSlot} {SliderSynonymSlot}",
+            "{SetSlot} the {MetricSlot} {SliderSynonymSlot} to something else",
             "{SetSlot} {MetricSlot} to something else",
             "{SetSlot} {MetricSlot} to a new value",
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot} to something else",
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot} to a new value",
             "{SetSlot} {MetricSlot} to {MetricValueSlot}",
-            "{SetSlot} {MetricSlot} to {MetricValueSlot} percent"
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot} to {MetricValueSlot}",
+            "{SetSlot} {MetricSlot} to {MetricValueSlot} percent",
+            "{SetSlot} {MetricSlot} {SliderSynonymSlot} to {MetricValueSlot} percent"
           ],
           "slots": [
             {
@@ -144,27 +150,29 @@
             {
               "name": "MetricSlot",
               "type": "SLIDER_METRIC_NAME",
-              "samples": []
+              "samples": [
+                "{MetricSlot}",
+                "{MetricSlot} {SliderSynonymSlot}",
+                "{SetSlot} {MetricSlot}",
+                "{SetSlot} {MetricSlot} {SliderSynonymSlot}",
+                "{SetSlot} the {MetricSlot}",
+                "{SetSlot} the {MetricSlot} {SliderSynonymSlot}"
+              ]
             },
             {
               "name": "MetricValueSlot",
               "type": "AMAZON.NUMBER",
-              "elicitationRequired": true,
-              "prompts": {
-                "elicitation": "Elicit.Slot.MetricValueSlot.Please"
-              },
-              "validations": [
-                {
-                  "type": "isGreaterThanOrEqualTo",
-                  "prompt": "Slot.Validation.MetricValueSlot.Range",
-                  "value": -100
-                },
-                {
-                  "type": "isLessThanOrEqualTo",
-                  "prompt": "Slot.Validation.IDSlot.Range",
-                  "value": 100
-                }
+              "samples": [
+                "{MetricValueSlot}",
+                "{MetricValueSlot} percent",
+                "{SetSlot} it to {MetricValueSlot}",
+                "{SetSlot} to {MetricValueSlot}"
               ]
+            },
+            {
+              "name": "SliderSynonymSlot",
+              "type": "SLIDER_SYNONYM",
+              "samples": []
             }
           ]
         },
@@ -192,11 +200,11 @@
             {
               "name": "AlgoNameSlot",
               "type": "ALGORITHM_NAME",
-              "samples": [],
-              "elicitationRequired": true,
-              "prompts": {
-                "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
-              }
+              "samples": [
+                "{AlgoNameSlot}",
+                "{AlgoNameSlot} algorithm",
+                "a {AlgoNameSlot} algorithm"
+              ]
             },
             {
               "name": "PhotoSlot",
@@ -206,17 +214,11 @@
             {
               "name": "IDSlot",
               "type": "AMAZON.NUMBER",
-              "validations": [
-                {
-                  "type": "isGreaterThanOrEqualTo",
-                  "prompt": "Slot.Validation.IDSlot.Range",
-                  "value": 0
-                },
-                {
-                  "type": "isLessThanOrEqualTo",
-                  "prompt": "Slot.Validation.IDSlot.Range",
-                  "value": 9
-                }
+              "samples": [
+                "{IDSlot}",
+                "number {IDSlot}",
+                "{PhotoSlot} {IDSlot}",
+                "{PhotoSlot} number {IDSlot}"
               ]
             }
           ]
@@ -571,6 +573,23 @@
           ]
         },
         {
+          "name": "SLIDER_SYNONYM",
+          "values": [
+            {
+              "id": "slider",
+              "name": {
+                "value": "slider",
+                "synonyms": [
+                  "metric",
+                  "value",
+                  "knob",
+                  "setting"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "SLIDER_METRIC_NAME",
           "values": [
             {
@@ -672,173 +691,215 @@
           ]
         }
       ]
-    }
-  },
-  "dialog": {
-    "delegationStrategy": "ALWAYS",
-    "intents": [
-      {
-        "name": "EditImageIntent",
-        "confirmationRequired": false,
-        "prompts": {},
-        "slots": [
-          {
-            "name": "IDSlot",
-            "type": "AMAZON.NUMBER",
-            "elicitationRequired": true,
-            "prompts": {
-              "elicitation": "Elicit.Slot.IDSlot.Please"
-            },
-            "validations": [
-              {
-                "type": "isGreaterThanOrEqualTo",
-                "prompt": "Slot.Validation.IDSlot.Range",
-                "value": 0
+    },
+    "dialog": {
+      "delegationStrategy": "ALWAYS",
+      "intents": [
+        {
+          "name": "EditImageIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "IDSlot",
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.IDSlot.Please"
               },
-              {
-                "type": "isLessThanOrEqualTo",
-                "prompt": "Slot.Validation.IDSlot.Range",
-                "value": 9
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "SetSliderMetricIntent",
-        "confirmationRequired": false,
-        "slots": [
-          {
-            "name": "MetricValueSlot",
-            "type": "AMAZON.NUMBER",
-            "elicitationRequired": true,
-            "prompts": {
-              "elicitation": "Elicit.Slot.MetricValueSlot.Please"
-            },
-            "validations": [
-              {
-                "type": "isGreaterThanOrEqualTo",
-                "prompt": "Slot.Validation.MetricValueSlot.Range",
-                "value": -100
-              },
-              {
-                "type": "isLessThanOrEqualTo",
-                "prompt": "Slot.Validation.IDSlot.Range",
-                "value": 100
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "ApplyAlgorithmIntent",
-        "slots": [
-          {
-            "name": "AlgoNameSlot",
-            "type": "ALGORITHM_NAME",
-            "elicitationRequired": true,
-            "prompts": {
-              "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 0
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 9
+                }
+              ]
             }
+          ]
+        },
+        {
+          "name": "EditSliderMetricIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.MetricSlot.Please"
+              }
+            }
+          ]
+        },
+        {
+          "name": "SetSliderMetricIntent",
+          "confirmationRequired": false,
+          "slots": [
+            {
+              "name": "MetricSlot",
+              "type": "SLIDER_METRIC_NAME",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.MetricSlot.Please"
+              }
+            },
+            {
+              "name": "MetricValueSlot",
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.MetricValueSlot.Please"
+              },
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.MetricValueSlot.Range",
+                  "value": -100
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 100
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "ApplyAlgorithmIntent",
+          "slots": [
+            {
+              "name": "AlgoNameSlot",
+              "type": "ALGORITHM_NAME",
+              "elicitationRequired": true,
+              "prompts": {
+                "elicitation": "Elicit.Slot.AlgoNameSlot.Please"
+              }
+            },
+            {
+              "name": "IDSlot",
+              "type": "AMAZON.NUMBER",
+              "prompts": {
+                "elicitation": "Elicit.Slot.IDSlot.Please"
+              },
+              "validations": [
+                {
+                  "type": "isGreaterThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 0
+                },
+                {
+                  "type": "isLessThanOrEqualTo",
+                  "prompt": "Slot.Validation.IDSlot.Range",
+                  "value": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "prompts": [
+      {
+        "id": "Elicit.Slot.MetricValueSlot.Please",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What value do you want to set it to?"
           },
           {
-            "name": "IDSlot",
-            "type": "AMAZON.NUMBER",
-            "validations": [
-              {
-                "type": "isGreaterThanOrEqualTo",
-                "prompt": "Slot.Validation.IDSlot.Range",
-                "value": 0
-              },
-              {
-                "type": "isLessThanOrEqualTo",
-                "prompt": "Slot.Validation.IDSlot.Range",
-                "value": 9
-              }
-            ]
+            "type": "PlainText",
+            "value": "OK. What value sounds good?"
+          },
+          {
+            "type": "PlainText",
+            "value": "What value do you want to try?"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.MetricSlot.Please",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What metric would you like to edit? You can change exposure, contrast, saturation, or tint."
+          },
+          {
+            "type": "PlainText",
+            "value": "OK. Exposure, contrast, saturation, or tint?"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.IDSlot.Please",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Which image ID would you like to use?"
+          },
+          {
+            "type": "PlainText",
+            "value": "OK. Which image?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Please select an image."
+          }
+        ]
+      },
+      {
+        "id": "Slot.Validation.MetricValueSlot.Range",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "The sliders only go from -100 to 100."
+          },
+          {
+            "type": "PlainText",
+            "value": "Sorry. The value needs to be somewhere between -100 and 100."
+          }
+        ]
+      },
+      {
+        "id": "Slot.Validation.IDSlot.Range",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Pick an ID between zero and nine"
+          },
+          {
+            "type": "PlainText",
+            "value": "The image ID needs to be between zero and nine"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.AlgoNameSlot.Please",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Which algorithm do you want to run? The options are \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", and \"Winter Filter\""
+          },
+          {
+            "type": "PlainText",
+            "value": "Which algorithm do you want to run: \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Which algorithm do you want to run: \"C.L.A.H.E.\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
+          },
+          {
+            "type": "PlainText",
+            "value": "Histogram equalization, Color Transfer, \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
           }
         ]
       }
     ]
-  },
-  "prompts": [
-    {
-      "id": "Elicit.Slot.MetricValueSlot.Please",
-      "variations": [
-        {
-          "type": "PlainText",
-          "value": "What value do you want to set it to?"
-        },
-        {
-          "type": "PlainText",
-          "value": "OK. What value sounds good?"
-        },
-        {
-          "type": "PlainText",
-          "value": "What value do you want to try?"
-        }
-      ]
-    },
-    {
-      "id": "Elicit.Slot.IDSlot.Please",
-      "variations": [
-        {
-          "type": "PlainText",
-          "value": "Which image ID would you like to edit?"
-        },
-        {
-          "type": "PlainText",
-          "value": "Edit which image?"
-        }
-      ]
-    },
-    {
-      "id": "Slot.Validation.MetricValueSlot.Range",
-      "variations": [
-        {
-          "type": "PlainText",
-          "value": "The sliders only go from -100 to 100."
-        },
-        {
-          "type": "PlainText",
-          "value": "Sorry. The value needs to be somewhere between -100 and 100."
-        }
-      ]
-    },
-    {
-      "id": "Slot.Validation.IDSlot.Range",
-      "variations": [
-        {
-          "type": "PlainText",
-          "value": "Pick an ID between zero and nine"
-        },
-        {
-          "type": "PlainText",
-          "value": "The image ID needs to be between zero and nine"
-        }
-      ]
-    },
-    {
-      "id": "Elicit.Slot.AlgoNameSlot.Please",
-      "variations": [
-        {
-          "type": "PlainText",
-          "value": "Which algorithm do you want to run? The options are \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", and \"Winter Filter\""
-        },
-        {
-          "type": "PlainText",
-          "value": "Which algorithm do you want to run: \"Color Transfer\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
-        },
-        {
-          "type": "PlainText",
-          "value": "Which algorithm do you want to run: \"C.L.A.H.E.\", \"Histogram Equalization\", \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
-        },
-        {
-          "type": "PlainText",
-          "value": "Histogram equalization, Color Transfer, \"Grayscale Filter\", \"H.D.R.\", \"Sharpen Filter\", \"Summer Filter\", or \"Winter Filter\"?"
-        }
-      ]
-    }
-  ],
-  "version": "1"
+  }
 }
