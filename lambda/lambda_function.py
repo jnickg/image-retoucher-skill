@@ -435,18 +435,17 @@ class EditImageIntentHandler(IRRequestHandler):
         image_id = slots[SLOT_ID].value
 
         if image_id is None:
-            handler_input.response_builder.speak("I need to know which image to edit. ")
-            handler_input.response_builder.ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
-            handler_input.response_builder.add_directive_to_reprompt(
-                ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
-                                    slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID])
+            return (
+                handler_input.response_builder
+                    .speak("Code-based reprompt. I need to know which image to edit. ")
+                    .ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
+                    .add_directive_to_reprompt(ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
+                                               slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID]))
+                    .set_card(StandardCard(title = 'Available Images',
+                                           text = "Select image to transfer colors from",
+                                           image = Image(large_image_url=str(API_COLLAGE_URL))))
+                    .response
             )
-            handler_input.response_builder.set_card(StandardCard(
-                title = 'Available Images',
-                text = "Select image to transfer colors from",
-                image = Image(large_image_url=str(API_COLLAGE_URL))
-            ))
-            return handler_input.response_builder.response
 
         if (context.image_id is None and context.image_url is None) or (len(context.operations) == 0) or context.confirmed_change_image:
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
@@ -507,6 +506,8 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
         metric_repeat = slots[SLOT_METRIC].value
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
         value = slots[SLOT_METRIC_VALUE].value
+        if value is None:
+            raise IRError(f"Sorry, what would you like to set the value to?")
         value = int(value) if value is not None else 0
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
 
