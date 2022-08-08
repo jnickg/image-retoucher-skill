@@ -434,6 +434,18 @@ class EditImageIntentHandler(IRRequestHandler):
         slots = handler_input.request_envelope.request.intent.slots
         image_id = slots[SLOT_ID].value
 
+        if image_id is None:
+            handler_input.response_builder.add_directive(
+                ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
+                                    slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID])
+            )
+            handler_input.response_builder.set_card(StandardCard(
+                title = 'Available Images',
+                text = "Select image to transfer colors from",
+                image = Image(large_image_url=str(API_COLLAGE_URL))
+            ))
+            return handler_input.response_builder.response
+
         if (context.image_id is None and context.image_url is None) or (len(context.operations) == 0) or context.confirmed_change_image:
             speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
             context.operations.clear()
