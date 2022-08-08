@@ -437,7 +437,7 @@ class EditImageIntentHandler(IRRequestHandler):
         if image_id is None:
             return (
                 handler_input.response_builder
-                    .speak("Code-based reprompt. I need to know which image to edit. ")
+                    .speak("Which image would you like to edit? ")
                     .ask("Please say which image ID to use. ", play_behavior=PlayBehavior.ENQUEUE)
                     .add_directive(ElicitSlotDirective(slot_to_elicit="IDSlot"))
                     .set_card(StandardCard(title = 'Available Images',
@@ -474,6 +474,16 @@ class EditSliderMetricIntentHandler(IRRequestHandler):
     def handle_inner(self, handler_input, context):
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
+
+        if metric_repeat is None:
+            return (
+                handler_input.response_builder
+                    .speak("Which slider would you like to edit? ")
+                    .ask("Please say which slider you'd like to edit. You can sat 'exposure,' 'contrast,' 'saturation,' or 'tint.' ", play_behavior=PlayBehavior.ENQUEUE)
+                    .add_directive(ElicitSlotDirective(slot_to_elicit="MetricSlot"))
+                    .response
+            )
+
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
 
         if (context.image_url is not None):
@@ -503,10 +513,26 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
     def set_slider_metric(handler_input: HandlerInput, context: SessionContext) -> Response:
         slots = handler_input.request_envelope.request.intent.slots
         metric_repeat = slots[SLOT_METRIC].value
+
+        if metric_repeat is None:
+            return (
+                    handler_input.response_builder
+                        .speak("Which slider would you like to edit? ")
+                        .ask("Please say which slider you'd like to edit. You can sat 'exposure,' 'contrast,' 'saturation,' or 'tint.' ", play_behavior=PlayBehavior.ENQUEUE)
+                        .add_directive(ElicitSlotDirective(slot_to_elicit="MetricSlot"))
+                        .response
+            )
+
         metric = METRIC_OPNAMES_MAP.get(str(metric_repeat), 'nop')
         value = slots[SLOT_METRIC_VALUE].value
         if value is None:
-            raise IRError(f"Sorry, what would you like to set the value to?")
+            return (
+                    handler_input.response_builder
+                        .speak(f"What would you like to set {metric_repeat} to? ")
+                        .ask("Please say the desired value. Any value from negative one hundred to positive one hundred works. ", play_behavior=PlayBehavior.ENQUEUE)
+                        .add_directive(ElicitSlotDirective(slot_to_elicit="MetricValueSlot"))
+                        .response
+            )
         value = int(value) if value is not None else 0
         logger.info(f'Setting {metric} ({type(metric)} to {value} ({type(value)})')
 
@@ -577,18 +603,28 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
         if context.in_interactive_edit:
             raise IRError("You're currently interactively editing a slider. To apply an algorithm instead, first say 'cancel'")
 
+        if algo_name is None:
+            return (
+                    handler_input.response_builder
+                        .speak(f"OK. Which algorithm would you like to run? You can run histogram equalization, color transfer, H.D.R., grayscale filter, sharpen filter, summer filter, or winter filter. ")
+                        .ask("Please say which algorithm you'd like to run. ", play_behavior=PlayBehavior.ENQUEUE)
+                        .add_directive(ElicitSlotDirective(slot_to_elicit="AlgoNameSlot"))
+                        .response
+            )
+
         algo_name = str(algo_name).lower()
         if is_algo_name_val_colorxfer(str(algo_name)) and param is None:
-            handler_input.response_builder.add_directive(
-                ElicitSlotDirective(updated_intent=handler_input.request_envelope.request.intent,
-                                    slot_to_elicit=handler_input.request_envelope.request.intent.slots[SLOT_ID])
+            return (
+                    handler_input.response_builder
+                        .speak(f"From which image would you like to transfer colors? Colors from the selected image will be applied to the current image. ")
+                        .ask("Please say which image you'd like to transfer colors from. ", play_behavior=PlayBehavior.ENQUEUE)
+                        .add_directive(ElicitSlotDirective(slot_to_elicit="IDSlot"))
+                        .set_card(StandardCard(
+                            title = 'Available Images',
+                            text = "Select image to transfer colors from",
+                            image = Image(large_image_url=str(API_COLLAGE_URL))))
+                        .response
             )
-            handler_input.response_builder.set_card(StandardCard(
-                title = 'Available Images',
-                text = "Select image to transfer colors from",
-                image = Image(large_image_url=str(API_COLLAGE_URL))
-            ))
-            return handler_input.response_builder.response
 
         param = param if param is not None else 0
         algo_op = ALGO_OPNAMES_MAP.get(str(algo_name), 'nop')

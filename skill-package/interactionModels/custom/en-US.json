@@ -693,7 +693,6 @@
       ]
     },
     "dialog": {
-      "delegationStrategy": "ALWAYS",
       "intents": [
         {
           "name": "EditImageIntent",
