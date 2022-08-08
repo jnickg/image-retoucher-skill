@@ -445,6 +445,25 @@ class EditImageIntentHandler(IRRequestHandler):
                                                                                 "IDSlot": Slot(
                                                                                     name="IDSlot",
                                                                                     confirmation_status=SlotConfirmationStatus.NONE
+                                                                                ),
+                                                                                "StartSlot": Slot(
+                                                                                    name="StartSlot",
+                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
+                                                                                    value=None
+                                                                                ),
+                                                                                "EditingSlot": Slot(
+                                                                                    name="EditingSlot",
+                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
+                                                                                    value=None
+                                                                                ),
+                                                                                "EditSlot": Slot(
+                                                                                    name="EditSlot",
+                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
+                                                                                    value="edit"
+                                                                                ),
+                                                                                "PhotoSlot": Slot(
+                                                                                    name="PhotoSlot",
+                                                                                    confirmation_status=SlotConfirmationStatus.NONE,
                                                                                 )
                                                                              }),
                                                        slot_to_elicit="IDSlot"))
