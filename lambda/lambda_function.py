@@ -27,6 +27,7 @@ from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.ui.simple_card import SimpleCard
 from ask_sdk_model.ui.standard_card import StandardCard
 from ask_sdk_model.ui.image import Image
+from ask_sdk_model.ui.play_behavior import PlayBehavior
 
 from ask_sdk_model import Response, Slot
 from requests import Session, session
@@ -68,7 +69,7 @@ class IRError(Exception):
             speak_output += '(By the way, valid metric values are: exposure, contrast, tint, and saturation.) '
         if 'say_algorithn_help' in self.kwargs and self.kwargs['say_algorithn_help']:
             speak_output += '(Also, valid algorithms are histogram equalization, color transfer, H.D.R., sharpen filter, summer filter, winter filter, and grayscale filter.) '
-        prompt_output = speak_output
+        prompt_output = ""
         card = None
         if 'prompt' in self.kwargs:
             prompt_output = self.kwargs['prompt']
@@ -440,14 +441,14 @@ class EditImageIntentHandler(IRRequestHandler):
             raise IRError("You're currently interactively editing a slider. To edit a new image, first say 'cancel'")
         else:
             context.confirmed_change_image = True
-            speak_output = "It looks like you're already editing an image.\r\nIf you really want to edit a new photo, just confirm by asking again."
-            prompt_output = speak_output
+            speak_output = "It looks like you're already editing an image."
+            prompt_output = "If you really want to edit a new photo, just confirm by asking again."
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
                 .set_card(card)
-                .ask(prompt_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -476,7 +477,7 @@ class EditSliderMetricIntentHandler(IRRequestHandler):
             handler_input.response_builder
                 .speak(speak_output)
                 .set_card(card)
-                .ask(prompt_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -523,11 +524,11 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
                 speak_output += f"Looks like you're fine tuning now. {END_INTERACTIVE_HELP}"
                 context.interactive_edit_fine_tuning_prompt_done = True
 
-            prompt_output = speak_output
+            prompt_output = "How does it look?"
             card = context.build_interactive_card()
         else:
             speak_output = f"Alright, setting {metric} to {value}."
-            prompt_output = speak_output
+            prompt_output = ""
             context.add_operation(str(metric), int(value))
             new_url = context.build_image_url()
             card = StandardCard(
@@ -540,7 +541,7 @@ class SetSliderMetricIntentHandler(IRRequestHandler):
             handler_input.response_builder
                 .speak(speak_output)
                 .set_card(card)
-                .ask(prompt_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -575,7 +576,7 @@ class ApplyAlgorithmIntentHandler(IRRequestHandler):
         context.add_operation(str(algo_op), int(param))
         new_url = context.build_image_url()
         speak_output = f"Alright, applying {algo_name} to the image."
-        prompt_output = speak_output
+        prompt_output = ""
         card = StandardCard(
             title = f'Updated Photo {context.image_id}',
             text = f'Applied {algo_name} to image',
@@ -596,17 +597,23 @@ class UndoChangesIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         if (context.image_url is None):
-            raise IRError(message="Sorry, I don't have a loded image in this session",
-                          prompt="Try saying 'edit photo 0' or another ID you see here.",
+            raise IRError(message="Sorry, I don't have a loded image in this session. ",
+                          prompt="Try saying 'edit photo 0' or another ID you see here. ",
                           show_collage=True)
         if context.in_interactive_edit:
-            raise IRError("Right now I don't support undo during interactive edits. If you don't like the changes right now, just cancel and try again. If you don't want to do it interactively, you can also just say 'set exposure to 37'")
+            raise IRError("Right now I don't support undo during interactive edits. ",
+                          prompt="If you don't like the changes right now, just cancel and try again. If you don't want to do it interactively, you can also just say 'set exposure to 37.' ")
         if (len(context.operations) == 0):
-            raise IRError("Hmm, there's nothing to undo. Try changing a metric, or applying an algorithm first. ", say_metric_help=True)
+            raise IRError("Hmm, there's nothing to undo. ",
+                          prompt="Try changing a slider, or applying an algorithm first. ",
+                          say_metric_help=True)
 
         op = context.operations.pop()
         last_opname = OPNAME_TO_FRIENDLY_MAP.get(op.op, op.op)
         speak_output = f'OK, reverting the last change, which was {last_opname}. '
+        prompt_output = "You can keep undoing, or now do some other operatioTry changing a metric, or applying an algorithm first.n such as setting exposure, or running H.D.R. "
+        if (len(context.operations) == 0):
+            prompt_output = "We're back to the un-edited version, so try editing a slider or running an algorithm. "
         new_url = context.build_image_url()
         card = StandardCard(
             title = f'Updated Photo {context.image_id}',
@@ -618,7 +625,7 @@ class UndoChangesIntentHandler(IRRequestHandler):
             handler_input.response_builder
                .speak(speak_output)
                .set_card(card)
-               .ask(speak_output)
+               .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                .response
         )
 
@@ -627,13 +634,13 @@ class SaveImageIntentHandler(IRRequestHandler):
         return ask_utils.is_intent_name("SaveImageIntent")(handler_input)
 
     def handle_inner(self, handler_input, context):
-        speak_output = "I don't know how to do this yet."
-        prompt_output = speak_output
+        speak_output = ""
+        prompt_output = ""
         card = None
 
         if context.in_interactive_edit:
             speak_output = f"OK, committing changes to {context.interactive_edit_metric}. Setting it to {context.interactive_edit_last_val}"
-            prompt_output = speak_output
+            prompt_output = "You're leaving interactive slider adjustment. Now you can set any slider value, interactively edit another one, or run an algorithm. "
             context.exit_interactive_mode('confirm')
             new_url = context.build_image_url()
             card = StandardCard(
@@ -642,10 +649,11 @@ class SaveImageIntentHandler(IRRequestHandler):
                 image = Image(large_image_url=new_url)
             )
         elif context.image_url is not None:
-            raise IRError(f"I don't yet support saving images to a device or database. Sorry about that. That said, I'm glad you are satisfied with your edited image! ")
+            raise IRError(f"I don't yet support saving images to a device or database. Sorry about that. That said, I'm glad you are satisfied with your edited image! ",
+                          prompt="You could always try editing another image. Or, if you're done, just say 'exit' or 'stop.' ")
 
         handler_input.response_builder.speak(speak_output)
-        handler_input.response_builder.ask(prompt_output)
+        handler_input.response_builder.ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
         if card is not None:
             handler_input.response_builder.set_card(card)
         return handler_input.response_builder.response
@@ -657,7 +665,8 @@ class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            raise IRError("Sorry, I can't do that yet. Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value.")
+            raise IRError("Sorry, I can't do that yet. ",
+                          prompt="Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value. ")
             # return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
@@ -689,7 +698,7 @@ class RaiseSliderInteractivelyIntentHandler(IRRequestHandler):
             handler_input.response_builder
                .speak(speak_output)
                .set_card(card)
-               .ask(prompt_output)
+               .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                .response
         )
 
@@ -700,7 +709,8 @@ class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         if not context.in_interactive_edit:
-            raise IRError("Sorry, I can't do that yet. Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value.")
+            raise IRError("Sorry, I can't do that yet. ",
+                          prompt="Try saying either 'edit metric' or 'set metric to x.' The former starts an interactive editor where you can raise or lower, and the latter just assigns the metric a new value. ")
             # return SetSliderMetricIntentHandler.set_slider_metric(handler_input, context)
 
         adjust_amount = 0
@@ -732,7 +742,7 @@ class LowerSliderInteractivelyIntentHandler(IRRequestHandler):
             handler_input.response_builder
                .speak(speak_output)
                .set_card(card)
-               .ask(prompt_output)
+               .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                .response
         )
 
@@ -751,14 +761,14 @@ class CompareImageIntentHandler(IRRequestHandler):
             image = Image(large_image_url=new_url)
         )
 
-        speak_output = "OK, here's a comparison of your edits with the original image."
-        prompt_output = speak_output
+        speak_output = "OK, here's a comparison of your edits with the original image. "
+        prompt_output = "What do you think? "
 
         return (
             handler_input.response_builder
                .speak(speak_output)
                .set_card(card)
-               .ask(prompt_output)
+               .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                .response
         )
 
@@ -779,10 +789,11 @@ class HelpIntentHandler(IRRequestHandler):
         if len(context.operations) > 2:
             speak_output += "By the way, you've made a lot of changes to this image. You can try saying 'compare to original' to see it right next to the un-edited version."
 
+        prompt_output = "So... what would you like to do? "
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -795,7 +806,7 @@ class CancelOrStopIntentHandler(IRRequestHandler):
 
     def handle_inner(self, handler_input, context):
         speak_output = "Goodbye!"
-        prompt_output = speak_output
+        prompt_output = ""
         if context.in_interactive_edit:
             context.exit_interactive_mode('cancel')
             speak_output = 'OK, canceling the interactive edit session.'
@@ -812,7 +823,7 @@ class CancelOrStopIntentHandler(IRRequestHandler):
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(prompt_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -823,11 +834,10 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-
-        # TODO end REST API session with a DELETE request on the image.
-
-        return handler_input.response_builder.response
+        return (
+            handler_input.response_builder
+                .speak("Hope you enjoyed using this app!")
+        )
 
 
 class IntentReflectorHandler(AbstractRequestHandler):
@@ -843,12 +853,13 @@ class IntentReflectorHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         intent_name = ask_utils.get_intent_name(handler_input)
-        speak_output = "You just triggered " + intent_name + "."
+        speak_output = f"You just triggered {intent_name}, but right now I don't know how to handle that. "
+        prompt_output = f"What would you like to do? "
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
                 .response
         )
 
@@ -875,7 +886,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
             speak_output = "Sorry, I had trouble doing what you asked. Please try again."
 
         handler_input.response_builder.speak(speak_output)
-        handler_input.response_builder.ask(prompt_output)
+        handler_input.response_builder.ask(prompt_output, play_behavior = PlayBehavior.ENQUEUE)
         if card is not None:
             handler_input.response_builder.set_card(card)
         return handler_input.response_builder.response

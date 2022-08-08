@@ -1,0 +1,156 @@
+@startuml
+
+skinparam groupInheritance 2
+
+class MyRequestHandler {
+  + can_handle(handler_input) : bool
+  + handle(handler_input) : Response
+  {abstract} # can_handle_inner(handler_input, context : SessionContext) : bool
+  {abstract} # handle_inner(handler_input, context : SessionContext) : Response
+}
+
+note left of MyRequestHandler {
+  Called ""IRRequestHandler"" in code (renamed
+  here to avoid confusion with interfaces).
+  This is the base request handler for all
+  RequestHandlers implemented in <i>Image</i>
+  <i>Retoucher</i>. All functions taking
+  ""handler_input"" as a parameter extract
+  the ""SessionContext" from that object,
+  and pass that into the ""_inner"" calls
+  which are implemented by child types. See
+  code for examples.
+}
+
+
+class SessionContext {
+  + generatedResponse : Response | None
+  # appState : IAppState
+  # operations : list
+  # decorators : list<SessionContextDecorator>
+  ..
+  + ChangeImageRequest() : SessionContext
+  + RaiseSliderRequest() : SessionContext
+  
+}
+
+note top of SessionContext
+  Handles user state (e.g. number of times a request
+  has been repeated) catches errors raised by the
+  ""IAppState"" object to generate responses, and
+  generally ensures responses are rich, meaningful,
+  and helpful to the user. Decoupling this from the
+  app state allows user workflows (and responses to
+  actions in each workflow) to change independently
+  of the app state, which is a simpler state machine.
+  
+  Also gives a central location to handle cases where,
+  given the application state and session state,
+  it seems likely that the user meant something else.
+  
+  An additional layer of error handling on top of the
+  system's language and dialogue models, which are
+  error prone and difficult to manage.
+end note
+
+class SessionContextDecorator {
+  # parent : SessionContext
+  ..
+  + DecorateResponse(response_builder)
+  + ValidateRequest(request : string)
+}
+
+note left of SessionContextDecorator
+  Primarily used to decorate response objects
+  to enrich user experience.
+  
+  Most calls to ""ValidateRequest()"" are no-ops,
+  but some decorators can throw an error if the
+  user is trying a workflow that the app handles
+  but requires additional user input.
+end note
+
+class UserRequestRepeeatTracker {
+  - requestCounter : map<string, number>
+  ..
+  
+}
+
+note bottom of UserRequestRepeeatTracker
+  Depending on the request being repeated,
+  the system can respond with help messages,
+  or take the repetition as confirmation
+  and execute the operation. When validating
+  a request, can throw if a workflow requiring
+  confirmation has not been confirmed.
+end note
+
+class UserRemindersTracker {
+  - timeSinceRequest : map<string, duration>
+  ..
+}
+
+note bottom of UserRemindersTracker
+  Tracks whether the user needs to be pre-prompted
+  or reminded of what to do for a given context
+  and application state
+end note
+
+class UserErrorsTracker {
+  - errorsThrown : map<string, number>
+}
+
+note bottom of UserErrorsTracker
+  If many errors get thrown by the user for
+  the same request(s), this decorates responses
+  by giving additional help messages to the user
+end note
+
+class IAppState <<interface>> {
+  ..
+  + EditImage(ID : number) : IAppState
+  + RaiseSliderMetric(name : string, amount : number) : IAppState
+  + SetSliderMetric(name : string, newValue : number) : IAppState
+  + StartInteractiveEdit(metricName : string) : IAppState
+  + EndInteractiveEdit() : IAppState
+  + ApplyAlgorithm(name : string, params : object[]) : IAppState
+  + Undo() : IAppState
+  + Redo() : IAppState
+}
+
+note bottom of StartingAppState
+  Implementatiosn throws if
+  anything except for ""EditImage()""
+  is called
+end note
+
+class StartingAppState {
+
+}
+
+class EditingImageState {
+  # imageID : number
+  # baseUrl : string
+}
+
+class InteractivelyEditingState {
+  - metricName : string
+  - currentValue : number
+  - lastChange : number
+  ..
+}
+
+IAppState <|-- StartingAppState
+IAppState <|-- EditingImageState
+EditingImageState <|-- InteractivelyEditingState
+
+SessionContext o- IAppState
+SessionContextDecorator <|-- UserRequestRepeeatTracker
+SessionContextDecorator <|-- UserRemindersTracker
+SessionContextDecorator <|-- UserErrorsTracker
+SessionContext "0..*" *-down- SessionContextDecorator
+
+MyRequestHandler - SessionContext
+
+
+@enduml
