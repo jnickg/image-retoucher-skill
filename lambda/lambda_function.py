@@ -29,6 +29,7 @@ from ask_sdk_model.ui.standard_card import StandardCard
 from ask_sdk_model.ui.image import Image
 from ask_sdk_model.ui.play_behavior import PlayBehavior
 from ask_sdk_model.dialog.elicit_slot_directive import ElicitSlotDirective
+from ask_sdk_model.dialog.confirm_intent_directive import ConfirmIntentDirective
 
 from ask_sdk_model import Response, Slot, Intent, SlotConfirmationStatus, IntentConfirmationStatus
 from requests import Session, session
@@ -446,16 +447,22 @@ class EditImageIntentHandler(IRRequestHandler):
                     .response
             )
 
-        if (context.image_id is None and context.image_url is None) or (len(context.operations) == 0) or context.confirmed_change_image:
-            speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
-            context.operations.clear()
-            context.confirmed_change_image = False
-        elif context.in_interactive_edit:
-            raise IRError("You're currently interactively editing a slider. To edit a new image, first say 'cancel'")
-        else:
+        if (context.image_id is not None or context.image_url is not None) or (len(context.operations) > 0) or not context.confirmed_change_image:
             context.confirmed_change_image = True
-            speak_output = "It looks like you're already editing an image."
-            prompt_output = "If you really want to edit a new photo, just confirm by asking again."
+            return (
+                handler_input.response_builder
+                    .speak("It looks like you're already editing an image. If you really want to edit a new photo, just confirm by asking again. ")
+                    .ask(f"Just say edit image {image_id} again if you want to confirm. ", play_behavior=PlayBehavior.ENQUEUE)
+                    .add_directive(ConfirmIntentDirective())
+                    .response
+            )
+
+        if context.in_interactive_edit:
+            raise IRError("You're currently interactively editing a slider. To edit a new image, first say 'cancel'")
+
+        speak_output, prompt_output, card = self._update_context_and_return_outputs(context, image_id)
+        context.operations.clear()
+        context.confirmed_change_image = False
 
         return (
             handler_input.response_builder
